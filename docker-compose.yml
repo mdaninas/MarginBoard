@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: marginboard-backend
+    restart: unless-stopped
+    environment:
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount raw + processed data so artifacts survive container restarts and
+      # can be regenerated locally without rebuilding the image.
+      - ./backend/data/raw:/app/data/raw
+      - ./backend/data/processed:/app/data/processed
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # NEXT_PUBLIC_* values are baked at build time. In docker-compose the
+        # browser talks to the backend via the host-mapped port, not the
+        # container DNS name — keep this aligned with the deployed URL.
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    container_name: marginboard-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"

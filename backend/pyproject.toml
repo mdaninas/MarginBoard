@@ -1,0 +1,50 @@
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning:pkg_resources",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "data", "build", "dist"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # pycodestyle + pyflakes
+    "I",             # isort
+    "B",             # flake8-bugbear
+    "UP",            # pyupgrade
+    "SIM",           # simplifications
+    "RUF",           # ruff-specific
+]
+ignore = [
+    "E501",    # line too long — handled by formatter
+    "B008",    # FastAPI Depends() pattern
+    "B905",    # zip(strict=...) — we know lengths match by construction
+    "RUF001",  # ambiguous unicode in string literals (we use en/em dashes deliberately)
+    "RUF002",  # same for docstrings
+    "RUF003",  # same for comments
+    "RUF046",  # int(round(x)) is intentional — keeps return-type intent visible
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B017", "SIM117"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+exclude = [
+    "\\.venv",
+    "data",
+    "tests",
+]
+
+[[tool.mypy.overrides]]
+module = "sklearn.*"
+ignore_missing_imports = true
