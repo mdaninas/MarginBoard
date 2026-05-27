@@ -9,7 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import API_PREFIX, CORS_ORIGINS, PROCESSED_DATASET_FILE, settings
 from app.logging_config import configure_logging, get_logger
 from app.middleware import RequestContextMiddleware
-from app.routes import admin, forecasting, inventory, methodology, overview, transactions
+from app.routes import (
+    admin,
+    analytics,
+    forecasting,
+    inventory,
+    methodology,
+    overview,
+    transactions,
+)
 from app.services import anomaly_service, forecast_service, inventory_service
 from ml.artifacts import ANOMALY_ARTIFACT, FORECAST_ARTIFACT, INVENTORY_ARTIFACT
 
@@ -82,6 +90,7 @@ for router in (
     inventory.router,
     transactions.router,
     methodology.router,
+    analytics.router,
     admin.router,
 ):
     app.include_router(router, prefix=API_PREFIX)

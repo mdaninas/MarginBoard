@@ -9,7 +9,7 @@ from app.services.data_service import (
 )
 
 
-def test_aliases_cover_known_variants():
+def test_aliases():
     # The PRD explicitly calls out these source column variants.
     expected = {
         "invoice", "invoiceno", "stockcode", "description", "quantity",
@@ -19,7 +19,7 @@ def test_aliases_cover_known_variants():
     assert expected.issubset(set(COLUMN_ALIASES.keys()))
 
 
-def test_standardize_handles_alternative_column_names():
+def test_alt_column_names():
     raw = pd.DataFrame({
         "InvoiceNo": ["1"],
         "StockCode": ["X"],
@@ -36,13 +36,13 @@ def test_standardize_handles_alternative_column_names():
     assert "customer_id" in out.columns
 
 
-def test_standardize_raises_when_required_columns_missing():
+def test_missing_required_cols_raises():
     raw = pd.DataFrame({"Invoice": ["1"], "Country": ["UK"]})
     with pytest.raises(ValueError, match="missing required columns"):
         _standardize_columns(raw)
 
 
-def test_clean_preserves_negative_quantities():
+def test_keep_negative_qty():
     raw = pd.DataFrame({
         "invoice_id": ["A", "B"],
         "stock_code": ["X", "Y"],
@@ -57,7 +57,7 @@ def test_clean_preserves_negative_quantities():
     assert (cleaned["quantity"] < 0).sum() == 1, "returns must be kept"
 
 
-def test_clean_drops_negative_unit_price():
+def test_drop_neg_price():
     raw = pd.DataFrame({
         "invoice_id": ["A", "B"],
         "stock_code": ["X", "Y"],
@@ -72,7 +72,7 @@ def test_clean_drops_negative_unit_price():
     assert len(cleaned) == 1
 
 
-def test_clean_computes_revenue():
+def test_revenue_calc():
     raw = pd.DataFrame({
         "invoice_id": ["A"],
         "stock_code": ["X"],
@@ -87,7 +87,7 @@ def test_clean_computes_revenue():
     assert cleaned["revenue"].iloc[0] == pytest.approx(10.0)
 
 
-def test_clean_preserves_internal_column_order():
+def test_column_order():
     raw = pd.DataFrame({
         "invoice_id": ["A"],
         "stock_code": ["X"],

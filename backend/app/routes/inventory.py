@@ -15,6 +15,7 @@ def inventory_summary() -> InventorySummary:
 
 @router.get("/products", response_model=list[InventoryProduct])
 def inventory_products(
+    # TODO: server-side pagination when we get past ~5k SKUs
     risk: str | None = Query(default=None, description="Filter by 'Low', 'Medium', or 'High'."),
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[InventoryProduct]:

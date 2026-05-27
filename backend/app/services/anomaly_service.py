@@ -1,22 +1,5 @@
-"""Hybrid transaction anomaly monitoring.
-
-Approach (per PRD §13.4)
-------------------------
-* **Rule-based reason codes** make the output explainable. Each line-level
-  transaction is checked against transparent thresholds derived from quantiles
-  of the dataset (extreme quantity, extreme unit price, return/cancellation,
-  unusually high transaction value).
-* **IsolationForest score** complements the rules — it captures multivariate
-  outliers the simple rules might miss. We normalise the raw decision-function
-  output to [0, 1] so it can be combined with the rule weight as a final
-  anomaly score.
-* **Final risk level** uses the threshold ladder from the PRD (0.85 → High,
-  0.60 → Medium, else Low).
-
-This service evaluates the full transaction line table but caps the returned
-table at a sensible limit so the frontend payload stays small. Aggregates
-in the summary are computed over the entire reviewed population.
-"""
+# Hybrid scoring: rule-based reason codes + IsolationForest. See methodology
+# endpoint for the full write-up. Thresholds revisited in notebook 03.
 
 from __future__ import annotations
 
@@ -42,7 +25,7 @@ DISCLAIMER = (
     "as a review aid only."
 )
 
-HIGH_THRESHOLD = 0.85
+HIGH_THRESHOLD = 0.85  # TODO: re-justify against labelled flags if/when available
 MEDIUM_THRESHOLD = 0.60
 
 

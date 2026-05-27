@@ -1,21 +1,4 @@
-"""Product-level inventory risk estimation.
-
-The Online Retail II dataset does NOT contain real current stock levels, so
-this module simulates stock per product in a transparent, deterministic way:
-
-* `estimated_demand` = average daily units sold over the last 90 days × 30.
-* `safety_stock`     = std of daily demand × safety multiplier (1.65 ≈ 95% SL).
-* `simulated_stock`  = `estimated_demand` × coverage ratio, where the coverage
-  ratio is derived from `hash(stock_code)` so the same product always gets the
-  same simulated stock between runs. Coverage spans 0.3–2.0 to reproduce a
-  realistic mix of under- and over-stocked SKUs.
-* `recommended_reorder` and `potential_lost_revenue` follow the formulas in
-  PRD §13.3.
-* Risk level uses the `stock_gap` rule from the PRD.
-
-Nothing here claims to represent real inventory — the API response label and
-the methodology page both say "simulated stock".
-"""
+"""Inventory risk estimation with simulated stock. See ADR-0002 for the rationale."""
 
 from __future__ import annotations
 
@@ -34,7 +17,7 @@ from ml.artifacts import INVENTORY_ARTIFACT
 
 logger = logging.getLogger(__name__)
 
-DEMAND_WINDOW_DAYS = 90
+DEMAND_WINDOW_DAYS = 90  # XXX: hardcoded; could be per-category once we know more
 HORIZON_DAYS = 30
 SAFETY_MULTIPLIER = 1.65
 SIMULATED_STOCK_NOTE = (

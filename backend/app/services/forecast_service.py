@@ -138,6 +138,9 @@ def cross_validate(features: pd.DataFrame) -> tuple[float, float, float, float]:
 def iterative_forecast(
     model: GradientBoostingRegressor, series: pd.Series, horizon: int
 ) -> tuple[list[pd.Timestamp], list[float]]:
+    # FIXME: iterative inference accumulates error past ~day 14. If accuracy
+    # ever becomes business-critical, switch to direct multi-step (one model
+    # per horizon) or an RNN. For now, the demo horizon is short enough.
     # Flat buffer for lag lookups — avoids O(n) pd.concat per step.
     buffer = list(series.iloc[-30:].to_numpy())
     last_date = series.index[-1]

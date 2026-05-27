@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> int:
+    # TODO: parallelize. Sequential is fine for 3 jobs and < 2 min total.
     for label, runner in (
         ("forecast", train_forecast.main),
         ("inventory", train_inventory.main),
