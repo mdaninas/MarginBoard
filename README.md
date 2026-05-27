@@ -1,5 +1,11 @@
 # MarginBoard
 
+[![backend ci](https://github.com/USER/marginboard-retail-ops/actions/workflows/backend.yml/badge.svg)](https://github.com/USER/marginboard-retail-ops/actions/workflows/backend.yml)
+[![frontend ci](https://github.com/USER/marginboard-retail-ops/actions/workflows/frontend.yml/badge.svg)](https://github.com/USER/marginboard-retail-ops/actions/workflows/frontend.yml)
+[![python](https://img.shields.io/badge/python-3.11%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![license: mit](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+
 > Turn retail transactions into revenue, inventory, and risk decisions.
 
 MarginBoard is a full-stack retail operations dashboard built on the
@@ -236,11 +242,27 @@ marginboard-retail-ops/
 
 ---
 
-## Roadmap
+## Documentation
 
-See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the prioritized list of
-follow-up work — pre-trained model artifacts, time-series cross validation,
-PostgreSQL backend, Docker, CI, and more.
+| Doc | Purpose |
+|-----|---------|
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | What's planned next, prioritized |
+| [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | Forecast + anomaly model details, limitations, failure modes |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records — *why* the obvious-looking choices were made |
+| [`CHANGELOG.md`](CHANGELOG.md) | Versioned history |
+
+## Common dev commands
+
+A `Makefile` is included for the common operations:
+
+```bash
+make install-dev   # backend deps
+make test          # pytest
+make lint          # ruff
+make train         # rebuild model artifacts
+make serve         # uvicorn dev server
+make docker-up     # docker compose up --build
+```
 
 ---
 
