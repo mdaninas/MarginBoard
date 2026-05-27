@@ -99,4 +99,6 @@ def test_clean_preserves_internal_column_order():
         "country": ["UK"],
     })
     cleaned = _clean(raw)
-    assert list(cleaned.columns) == INTERNAL_COLUMNS
+    # Internal columns must lead the frame; downstream auxiliary columns
+    # (e.g. country_lc) follow.
+    assert list(cleaned.columns)[: len(INTERNAL_COLUMNS)] == INTERNAL_COLUMNS

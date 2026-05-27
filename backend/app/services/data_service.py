@@ -120,6 +120,10 @@ def _standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     if "customer_id" not in df.columns:
+        logger.warning(
+            "Source dataset has no customer_id column — active_customers will "
+            "be 0 across all metrics."
+        )
         df["customer_id"] = pd.NA
 
     return df
@@ -152,10 +156,12 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Dropped %s rows during cleaning (invalid date/qty/price).", dropped)
 
     df["revenue"] = df["quantity"].astype(float) * df["unit_price"].astype(float)
+    # Pre-normalized country for case-insensitive filtering at the route layer.
+    df["country_lc"] = df["country"].str.casefold()
 
     # Stable ordering helps downstream operations and parquet compression.
     df = df.sort_values("invoice_date").reset_index(drop=True)
-    return df[INTERNAL_COLUMNS]
+    return df[[*INTERNAL_COLUMNS, "country_lc"]]
 
 
 def _build_processed() -> pd.DataFrame:

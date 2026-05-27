@@ -104,21 +104,30 @@ def _compute(df: pd.DataFrame) -> InventoryArtifacts:
     if recent.empty:
         return InventoryArtifacts(products=[], summary=_empty_summary())
 
+    # Build a (stock_code × day) matrix so zero-sale days count in the
+    # demand statistics. The previous version grouped only on days that had
+    # sales, which made `mean` over-estimate slow movers — a SKU with one
+    # 10-unit sale across 90 days came out as mean_daily_units = 10
+    # (i.e. estimated_demand = 300 for the next 30 days). Now mean is the
+    # true daily average over the window.
     recent = recent.assign(_day=recent["invoice_date"].dt.normalize())
-    daily = (
-        recent.groupby(["stock_code", "_day"])
-        .agg(units=("quantity", "sum"))
-        .reset_index()
-    )
-
-    stats = (
-        daily.groupby("stock_code")
-        .agg(
-            mean_daily_units=("units", "mean"),
-            std_daily_units=("units", "std"),
+    daily_pivot = (
+        recent.pivot_table(
+            index="stock_code",
+            columns="_day",
+            values="quantity",
+            aggfunc="sum",
+            fill_value=0,
         )
-        .fillna(0.0)
+        .reindex(
+            columns=pd.date_range(window_start, max_date, freq="D"),
+            fill_value=0,
+        )
     )
+    stats = pd.DataFrame({
+        "mean_daily_units": daily_pivot.mean(axis=1),
+        "std_daily_units": daily_pivot.std(axis=1).fillna(0.0),
+    })
 
     # Use the most frequent description per stock_code to avoid noisy
     # one-off return descriptions overwriting the canonical product name.

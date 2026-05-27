@@ -195,12 +195,15 @@ def build_artifacts(df: pd.DataFrame | None = None) -> ForecastArtifacts:
         else None
     )
 
-    # CV uses chronological folds — report the *last* fold's window for
-    # transparency, since that's the model behavior closest to production.
+    # The final model is fit on ALL features (not on any single fold), so the
+    # reported training_period reflects the full available range. The
+    # validation_period below is the *last* fold's validation window — useful
+    # as a representative sample of CV behavior, not a literal validation set
+    # for the production model.
+    train_start = features.index[0].date()
+    train_end = features.index[-1].date()
     tscv = TimeSeriesSplit(n_splits=CV_FOLDS)
-    train_idx, valid_idx = list(tscv.split(features))[-1]
-    train_start = features.index[train_idx[0]].date()
-    train_end = features.index[train_idx[-1]].date()
+    _, valid_idx = list(tscv.split(features))[-1]
     valid_start = features.index[valid_idx[0]].date()
     valid_end = features.index[valid_idx[-1]].date()
 

@@ -34,7 +34,12 @@ def _filter(
     end_ts = pd.Timestamp(range_.end) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
     mask = (df["invoice_date"] >= start_ts) & (df["invoice_date"] <= end_ts)
     if country:
-        mask &= df["country"].str.casefold() == country.casefold()
+        # Use the pre-normalized column when available (added in data_service)
+        # to skip a 1M-row casefold on every request.
+        if "country_lc" in df.columns:
+            mask &= df["country_lc"] == country.casefold()
+        else:
+            mask &= df["country"].str.casefold() == country.casefold()
     return df.loc[mask]
 
 
