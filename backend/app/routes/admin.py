@@ -8,7 +8,7 @@ running container.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, Response, status
 
 from app.config import settings
 from app.services import anomaly_service, data_service, forecast_service, inventory_service
@@ -29,11 +29,12 @@ def _check_token(authorization: str | None) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token.")
 
 
-@router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
-def refresh_caches(authorization: str | None = Header(default=None)) -> None:
+@router.post("/refresh")
+def refresh_caches(authorization: str | None = Header(default=None)) -> Response:
     """Drop in-memory caches across all services."""
     _check_token(authorization)
     data_service.reset_cache()
     forecast_service.reset_cache()
     inventory_service.reset_cache()
     anomaly_service.reset_cache()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

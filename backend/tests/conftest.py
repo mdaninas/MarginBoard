@@ -7,7 +7,12 @@ the post-`data_service` internal schema.
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta
+
+# Disable startup prewarm during the test session — TestClient triggers
+# lifespan and we don't want each test paying that cost.
+os.environ.setdefault("PREWARM_ON_STARTUP", "false")
 
 import numpy as np
 import pandas as pd
