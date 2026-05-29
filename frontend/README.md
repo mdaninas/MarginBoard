@@ -23,4 +23,3 @@ to `http://localhost:8000/api`).
 | `/forecasting`   | 30-day revenue forecast, model metrics, training window.     |
 | `/inventory`     | Simulated inventory risk and recommended reorder quantities. |
 | `/transactions`  | Anomaly monitoring with reason codes and risk levels.        |
-| `/methodology`   | Dataset, cleaning, model, and limitations documentation.     |

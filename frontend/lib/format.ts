@@ -1,6 +1,6 @@
 // Display currency is USD. The Online Retail II dataset is in GBP, but
 // values here are shown in USD notation without FX conversion — see
-// docs/MODEL_CARD.md and the in-app Methodology page for context.
+// docs/MODEL_CARD.md for context.
 const CURRENCY = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",

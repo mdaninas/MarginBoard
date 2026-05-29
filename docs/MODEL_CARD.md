@@ -104,6 +104,60 @@ notebook that will document precision @ k assumptions.
 
 ---
 
+---
+
+## 3. Market basket analysis
+
+### Intended use
+Surface SKU pairs (or larger sets) that frequently co-occur in the same
+invoice. Output is a starting point for merchandising review — what to
+display together, what to bundle, what to cross-sell.
+
+### Algorithm
+FP-Growth (`mlxtend.frequent_patterns.fpgrowth`) for frequent itemsets,
+followed by `association_rules` with a confidence threshold. FP-Growth is
+chosen over plain Apriori because it avoids the candidate-generation step
+and runs faster on dense baskets at the same `min_support`.
+
+### Pre-filtering
+The 6,861-SKU catalog has a long tail of items that appear in a handful
+of invoices. Including them inflates the lattice size without producing
+rules that clear `min_support`. The service prunes to the **top 200 SKUs**
+by distinct-invoice frequency before running FP-Growth.
+
+### Thresholds
+- `min_support = 0.01` — itemset must appear in ≥ 1% of multi-item baskets
+  (≈ 300 baskets on the current dataset).
+- `min_confidence = 0.30` — at least 30% of baskets containing the
+  antecedent must also contain the consequent.
+- Output is capped at 200 rules sorted by `lift` (most surprising rules
+  first).
+
+### Metrics returned per rule
+- **support** — P(A ∩ B). Share of all baskets containing both sets.
+- **confidence** — P(B | A). Strength of the implication.
+- **lift** — confidence / P(B). 1× means independence; > 1 means positive
+  association; < 1 means negative association.
+
+### What this is not
+- Not a recommendation engine. It surfaces statistical co-occurrence in
+  historical baskets, with no model of user-specific context or sequence.
+- Not causal. "Buying A causes the customer to buy B" cannot be inferred
+  from co-occurrence alone.
+- Not seasonally aware. Rules are computed over the full dataset; if
+  Christmas-only items co-occur, they will co-occur in the rules year-round.
+
+### Known failure modes
+- High-lift rules between identical-collection variants (e.g. "Blue mini
+  dots cutlery → Pink mini dots cutlery") are not surprising and not
+  actionable. Merchandising review must decide which patterns reflect a
+  real cross-sell opportunity versus a known collection.
+- Rare SKUs that happen to be bought together in a small number of bulk
+  orders can clear `min_support` if the orders are large enough; the rule
+  then reflects a few outlier customers, not broad behaviour.
+
+---
+
 ## Ethical considerations
 
 - The dataset is anonymized to the customer-id level only; no PII.

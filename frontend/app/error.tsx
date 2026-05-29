@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTranslation } from "@/lib/i18n/I18nProvider";
 
+// Error boundaries render outside the I18nProvider tree in some Next.js
+// scenarios, so we use hardcoded strings here to avoid a missing-context crash.
 export default function GlobalError({
   error,
   reset,
@@ -10,18 +11,19 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const { t } = useTranslation();
-
   useEffect(() => {
     console.error("Unhandled page error", error);
   }, [error]);
 
   return (
     <div className="card p-8 max-w-xl">
-      <p className="font-semibold text-danger">{t("common.something_wrong")}</p>
-      <p className="text-sm text-ink-muted mt-2">{t("common.something_wrong_desc")}</p>
+      <p className="font-semibold text-bad">Something went wrong</p>
+      <p className="text-sm text-ink-muted mt-2">
+        The page could not be rendered. This usually means the backend is
+        unreachable, or an unexpected exception occurred.
+      </p>
       {error.message && (
-        <pre className="text-xs bg-background border border-border rounded-md p-3 mt-3 overflow-x-auto text-ink">
+        <pre className="text-xs bg-surface-2 border border-rule rounded-mb-2 p-3 mt-3 overflow-x-auto">
           {error.message}
         </pre>
       )}
@@ -29,15 +31,15 @@ export default function GlobalError({
         <button
           type="button"
           onClick={reset}
-          className="bg-accent text-white text-sm font-medium px-3 py-1.5 rounded-md hover:opacity-90"
+          className="bg-accent text-white text-sm font-medium px-3 py-1.5 rounded-mb-1 hover:opacity-90"
         >
-          {t("common.try_again")}
+          Try again
         </button>
         <a
           href="/overview"
-          className="border border-border text-sm font-medium px-3 py-1.5 rounded-md hover:bg-background"
+          className="border border-rule text-sm font-medium px-3 py-1.5 rounded-mb-1 hover:bg-surface-2"
         >
-          {t("common.back_to_overview")}
+          Back to overview
         </a>
       </div>
     </div>

@@ -30,24 +30,21 @@ function applyTheme(theme: Theme) {
   }
 }
 
-function readInitialTheme(): Theme {
+function readStoredTheme(): Theme {
   if (typeof window === "undefined") return "light";
   const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
   if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  // Default to "light" for SSR; sync from localStorage on first client render.
   const [theme, setThemeState] = useState<Theme>("light");
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const initial = readInitialTheme();
+    const initial = readStoredTheme();
     setThemeState(initial);
     applyTheme(initial);
-    setHydrated(true);
   }, []);
 
   const setTheme = useCallback((next: Theme) => {
@@ -56,7 +53,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      // ignore localStorage failures (private mode, quota)
+      // ignore storage failures in private/restricted contexts
     }
   }, []);
 
@@ -69,15 +66,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [theme, setTheme, toggle],
   );
 
-  // Avoid a flash of mismatched UI between SSR (light default) and hydrated theme.
-  if (!hydrated) {
-    return (
-      <ThemeContext.Provider value={value}>
-        <div style={{ visibility: "hidden" }}>{children}</div>
-      </ThemeContext.Provider>
-    );
-  }
-
+  // Render children immediately — no visibility:hidden gate that could cause
+  // a permanent blank page if hydration errors. A brief light→dark flash on
+  // dark-mode users is the acceptable trade-off.
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
@@ -87,11 +78,6 @@ export function useTheme() {
   return ctx;
 }
 
-/**
- * Resolve a Tailwind CSS variable to its concrete color value. Useful for
- * libraries that take colors as props (Recharts, etc.) and cannot consume
- * CSS variables directly through className.
- */
 export function useThemeColors() {
   const { theme } = useTheme();
   return useMemo(() => {
@@ -101,28 +87,34 @@ export function useThemeColors() {
     const root = window.getComputedStyle(document.documentElement);
     const read = (name: string) => root.getPropertyValue(name).trim();
     return {
-      accent: read("--color-accent") || FALLBACK_COLORS[theme].accent,
-      ink: read("--color-ink") || FALLBACK_COLORS[theme].ink,
-      inkMuted: read("--color-ink-muted") || FALLBACK_COLORS[theme].inkMuted,
-      border: read("--color-border") || FALLBACK_COLORS[theme].border,
-      surface: read("--color-surface") || FALLBACK_COLORS[theme].surface,
+      accent:     read("--color-accent")     || FALLBACK_COLORS[theme].accent,
+      accentSoft: read("--color-accent-soft") || FALLBACK_COLORS[theme].accentSoft,
+      accentInk:  read("--color-accent-ink")  || FALLBACK_COLORS[theme].accentInk,
+      ink:        read("--color-ink")         || FALLBACK_COLORS[theme].ink,
+      inkMuted:   read("--color-ink-2")       || FALLBACK_COLORS[theme].inkMuted,
+      inkFaint:   read("--color-ink-3")       || FALLBACK_COLORS[theme].inkFaint,
+      border:     read("--color-rule")        || FALLBACK_COLORS[theme].border,
+      surface:    read("--color-surface")     || FALLBACK_COLORS[theme].surface,
+      surface2:   read("--color-surface-2")   || FALLBACK_COLORS[theme].surface2,
+      surface3:   read("--color-surface-3")   || FALLBACK_COLORS[theme].surface3,
+      good:       read("--color-good")        || FALLBACK_COLORS[theme].good,
+      warn:       read("--color-warn")        || FALLBACK_COLORS[theme].warn,
+      bad:        read("--color-bad")         || FALLBACK_COLORS[theme].bad,
     };
   }, [theme]);
 }
 
 const FALLBACK_COLORS = {
   light: {
-    accent: "#2563eb",
-    ink: "#0f172a",
-    inkMuted: "#64748b",
-    border: "#e2e8f0",
-    surface: "#ffffff",
+    accent: "#e36b3a", accentSoft: "#fde2d2", accentInk: "#a8431c",
+    ink: "#1f1b16", inkMuted: "#5a5247", inkFaint: "#9a9286",
+    border: "#ece4d4", surface: "#ffffff", surface2: "#fbf6ec", surface3: "#f0e9d8",
+    good: "#3f8a5a", warn: "#b8821e", bad: "#c64a3a",
   },
   dark: {
-    accent: "#60a5fa",
-    ink: "#e2e8f0",
-    inkMuted: "#94a3b8",
-    border: "#1f2937",
-    surface: "#111827",
+    accent: "#ff8456", accentSoft: "#4a2818", accentInk: "#ffaa7a",
+    ink: "#f0e8db", inkMuted: "#c0b8a8", inkFaint: "#847b6c",
+    border: "#322c26", surface: "#221d18", surface2: "#2a2520", surface3: "#322c26",
+    good: "#6fb685", warn: "#d4a445", bad: "#e2664f",
   },
 } as const;

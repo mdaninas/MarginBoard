@@ -1,36 +1,42 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Delta } from "@/components/primitives/Delta";
 
 interface Props {
   label: string;
   value: ReactNode;
   delta?: number | null;
   deltaLabel?: string;
-  hint?: string;
+  hint?: ReactNode;
+  /** Larger value typography for hero metrics. */
+  big?: boolean;
 }
 
-function formatDelta(delta: number) {
-  const sign = delta > 0 ? "+" : "";
-  return `${sign}${delta.toFixed(1)}%`;
-}
-
-export function MetricCard({ label, value, delta, deltaLabel, hint }: Props) {
+/**
+ * Card-shaped KPI block. Used in 4–6 column grids on every page. The big
+ * variant is reserved for the single hero metric per page.
+ */
+export function MetricCard({ label, value, delta, deltaLabel, hint, big = false }: Props) {
   return (
-    <div className="card p-5">
-      <p className="text-xs uppercase tracking-wide text-ink-muted font-medium">{label}</p>
-      <p className="text-2xl font-semibold mt-2">{value}</p>
+    <div className="card p-4 md:p-[18px]">
+      <p className="text-[11px] font-medium text-ink-faint">{label}</p>
+      <p
+        className={
+          big
+            ? "mt-1 text-[34px] font-semibold leading-tight tracking-[-1.2px]"
+            : "mt-1 text-[24px] font-semibold leading-tight tracking-[-0.6px]"
+        }
+      >
+        {value}
+      </p>
       {delta !== undefined && delta !== null && (
-        <p
-          className={cn(
-            "text-xs mt-2",
-            delta > 0 ? "text-success" : delta < 0 ? "text-danger" : "text-ink-muted",
-          )}
-        >
-          {formatDelta(delta)}
-          {deltaLabel && <span className="text-ink-muted"> {deltaLabel}</span>}
-        </p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <Delta value={`${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`} up={delta > 0} />
+          {deltaLabel && <span className="text-[11px] text-ink-faint">{deltaLabel}</span>}
+        </div>
       )}
-      {hint && <p className="text-xs text-ink-muted mt-2">{hint}</p>}
+      {hint && (
+        <p className="mt-1.5 font-mono text-[11px] text-ink-faint">{hint}</p>
+      )}
     </div>
   );
 }

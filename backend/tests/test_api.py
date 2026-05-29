@@ -129,19 +129,33 @@ def test_transactions_anomalies(client):
     assert len(r.json()) <= 20
 
 
-# ---- methodology ------------------------------------------------------------
+# ---- basket -----------------------------------------------------------------
 
 
-def test_methodology_english_default(client):
-    r = client.get("/api/methodology")
+def test_basket_summary(client):
+    r = client.get("/api/basket/summary")
     assert r.status_code == 200
-    assert r.json()["dataset"]["title"] == "Dataset"
+    body = r.json()
+    assert body["transactions_analyzed"] >= 0
+    assert body["min_support"] > 0
 
 
-def test_methodology_indonesian(client):
-    r = client.get("/api/methodology", params={"lang": "id"})
+def test_basket_rules_default(client):
+    r = client.get("/api/basket/rules", params={"limit": 20})
     assert r.status_code == 200
-    assert r.json()["data_cleaning"]["title"] == "Pembersihan Data"
+    rules = r.json()
+    assert len(rules) <= 20
+    for rule in rules:
+        # Sanity: each rule has at least one antecedent and one consequent.
+        assert rule["antecedents"]
+        assert rule["consequents"]
+
+
+def test_basket_rules_min_lift_filter(client):
+    r = client.get("/api/basket/rules", params={"limit": 50, "min_lift": 2.0})
+    assert r.status_code == 200
+    for rule in r.json():
+        assert rule["lift"] >= 2.0
 
 
 # ---- analytics --------------------------------------------------------------

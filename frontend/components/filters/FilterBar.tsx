@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n/I18nProvider";
+import { Pill } from "@/components/primitives/Pill";
 
 export interface FilterValue {
   start: string;
@@ -13,10 +14,17 @@ interface Props {
   initial: FilterValue;
   countries?: string[];
   showCountry?: boolean;
+  datasetEnd?: string;
   onApply: (value: FilterValue) => void;
 }
 
-export function FilterBar({ initial, countries = [], showCountry = true, onApply }: Props) {
+export function FilterBar({
+  initial,
+  countries = [],
+  showCountry = true,
+  datasetEnd,
+  onApply,
+}: Props) {
   const [value, setValue] = useState<FilterValue>(initial);
   const { t } = useTranslation();
 
@@ -24,39 +32,36 @@ export function FilterBar({ initial, countries = [], showCountry = true, onApply
     setValue(initial);
   }, [initial.start, initial.end, initial.country]);
 
+  const applyPreset = (start: string, end: string) => {
+    const next = { ...value, start, end };
+    setValue(next);
+    onApply(next);
+  };
+
   return (
-    <form
-      className="card p-4 flex flex-wrap items-end gap-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onApply(value);
-      }}
-    >
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-muted mb-1">{t("common.from")}</label>
+    <div className="card flex flex-wrap items-end gap-3 p-4">
+      <Field label={t("common.from")}>
         <input
           type="date"
           value={value.start}
           onChange={(e) => setValue((v) => ({ ...v, start: e.target.value }))}
-          className="border border-border rounded-md px-2 py-1.5 text-sm bg-surface text-ink"
+          className="rounded-mb-1 border border-rule bg-surface px-2.5 py-1.5 text-sm text-ink"
         />
-      </div>
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-muted mb-1">{t("common.to")}</label>
+      </Field>
+      <Field label={t("common.to")}>
         <input
           type="date"
           value={value.end}
           onChange={(e) => setValue((v) => ({ ...v, end: e.target.value }))}
-          className="border border-border rounded-md px-2 py-1.5 text-sm bg-surface text-ink"
+          className="rounded-mb-1 border border-rule bg-surface px-2.5 py-1.5 text-sm text-ink"
         />
-      </div>
+      </Field>
       {showCountry && (
-        <div className="flex flex-col">
-          <label className="text-xs text-ink-muted mb-1">{t("common.country")}</label>
+        <Field label={t("common.country")}>
           <select
             value={value.country}
             onChange={(e) => setValue((v) => ({ ...v, country: e.target.value }))}
-            className="border border-border rounded-md px-2 py-1.5 text-sm bg-surface text-ink min-w-[10rem]"
+            className="min-w-[12rem] rounded-mb-1 border border-rule bg-surface px-2.5 py-1.5 text-sm text-ink"
           >
             <option value="">{t("common.all_countries")}</option>
             {countries.map((c) => (
@@ -65,17 +70,19 @@ export function FilterBar({ initial, countries = [], showCountry = true, onApply
               </option>
             ))}
           </select>
-        </div>
+        </Field>
       )}
+
       <button
-        type="submit"
-        className="bg-accent text-white text-sm font-medium px-3 py-1.5 rounded-md hover:opacity-90"
+        type="button"
+        onClick={() => onApply(value)}
+        className="rounded-mb-1 bg-ink px-3 py-1.5 text-sm font-medium text-surface hover:opacity-90"
       >
         {t("common.apply")}
       </button>
       <button
         type="button"
-        className="text-sm text-ink-muted hover:text-ink px-2"
+        className="px-2 text-sm text-ink-muted hover:text-ink"
         onClick={() => {
           const cleared = { start: "", end: "", country: "" };
           setValue(cleared);
@@ -84,6 +91,56 @@ export function FilterBar({ initial, countries = [], showCountry = true, onApply
       >
         {t("common.reset")}
       </button>
-    </form>
+
+      {datasetEnd && (
+        <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-rule pt-3 text-xs">
+          <span className="text-ink-faint">Quick range:</span>
+          {presetsFor(datasetEnd).map((preset) => (
+            <Pill
+              key={preset.key}
+              onClick={() => applyPreset(preset.start, preset.end)}
+            >
+              {t(preset.label)}
+            </Pill>
+          ))}
+        </div>
+      )}
+    </div>
   );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col">
+      <label className="mb-1 text-[11px] text-ink-faint">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+interface Preset {
+  key: string;
+  label: string;
+  start: string;
+  end: string;
+}
+
+function presetsFor(datasetEndISO: string): Preset[] {
+  const end = new Date(datasetEndISO);
+  if (Number.isNaN(end.getTime())) return [];
+
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const back = (days: number) => {
+    const d = new Date(end);
+    d.setDate(d.getDate() - days);
+    return iso(d);
+  };
+  const ytdStart = `${end.getFullYear()}-01-01`;
+
+  return [
+    { key: "30d", label: "common.preset.30d", start: back(29), end: iso(end) },
+    { key: "90d", label: "common.preset.90d", start: back(89), end: iso(end) },
+    { key: "ytd", label: "common.preset.ytd", start: ytdStart, end: iso(end) },
+    { key: "all", label: "common.preset.all", start: "", end: "" },
+  ];
 }

@@ -52,6 +52,11 @@ def top_products(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.get("/countries", response_model=list[str])
+def countries() -> list[str]:
+    return metrics_service.list_countries()
+
+
 @router.get("/country-performance", response_model=list[CountryPerformance])
 def country_performance(
     start: str | None = Query(default=None),

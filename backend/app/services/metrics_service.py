@@ -157,7 +157,7 @@ def get_top_products(
     #   - top-products excludes returns to rank by gross sales only, otherwise
     #     a product with high return volume could appear at the top with a
     #     small net positive.
-    # This is documented on the Methodology page.
+    # This is documented in docs/MODEL_CARD.md.
     sales_only = filtered[filtered["quantity"] > 0]
     if sales_only.empty:
         return []
@@ -185,6 +185,17 @@ def get_top_products(
         )
         for _, row in grouped.iterrows()
     ]
+
+
+def list_countries() -> list[str]:
+    """All unique country names in the dataset, sorted alphabetically.
+
+    The Country dropdown on the frontend used to be filled from the top-10
+    country-performance response, which silently capped the filter at 10
+    countries. There are ~38 in the dataset; users couldn't pick the rest.
+    """
+    df = load_transactions()
+    return sorted(df["country"].dropna().unique().tolist())
 
 
 def get_country_performance(

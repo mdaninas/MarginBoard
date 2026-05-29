@@ -14,46 +14,59 @@ interface Props<T> {
   caption?: string;
 }
 
+/**
+ * Plain HTML table styled for the cream palette. First row gets a faint
+ * accent tint — useful for emphasising "top by metric" tables.
+ */
 export function DataTable<T>({ columns, rows, rowKey, caption }: Props<T>) {
   return (
-    <div className="card overflow-hidden">
+    <div className="overflow-x-auto">
       {caption && (
-        <div className="px-5 py-3 border-b border-border text-sm font-medium">
+        <div className="border-b border-rule px-[18px] py-3 text-[13.5px] font-semibold">
           {caption}
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-background border-b border-border">
-            <tr>
+      <table className="w-full border-collapse text-[12.5px]">
+        <thead className="border-b border-rule bg-surface-2">
+          <tr>
+            {columns.map((c) => (
+              <th
+                key={c.key}
+                className={`px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-ink-faint ${
+                  c.align === "right" ? "text-right" : "text-left"
+                }`}
+              >
+                {c.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, idx) => (
+            <tr
+              key={rowKey(row)}
+              className="border-t border-rule"
+              style={
+                idx === 0
+                  ? {
+                      background:
+                        "color-mix(in srgb, var(--color-accent-soft) 30%, var(--color-surface))",
+                    }
+                  : undefined
+              }
+            >
               {columns.map((c) => (
-                <th
+                <td
                   key={c.key}
-                  className={`px-4 py-2.5 text-xs uppercase tracking-wide font-medium text-ink-muted ${
-                    c.align === "right" ? "text-right" : "text-left"
-                  }`}
+                  className={`px-3 py-2.5 ${c.align === "right" ? "text-right" : "text-left"}`}
                 >
-                  {c.header}
-                </th>
+                  {c.render(row)}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-border last:border-0">
-                {columns.map((c) => (
-                  <td
-                    key={c.key}
-                    className={`px-4 py-2.5 ${c.align === "right" ? "text-right" : "text-left"}`}
-                  >
-                    {c.render(row)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

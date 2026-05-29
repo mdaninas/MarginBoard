@@ -9,8 +9,8 @@ interface Props {
 export function LoadingState({ label }: Props) {
   const { t } = useTranslation();
   return (
-    <div className="card p-6 flex items-center gap-3 text-sm text-ink-muted">
-      <span className="inline-block w-2 h-2 rounded-full bg-accent animate-pulse" />
+    <div className="card-soft flex items-center gap-3 p-5 text-sm text-ink-muted">
+      <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
       {label ?? t("common.loading")}
     </div>
   );

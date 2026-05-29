@@ -4,27 +4,49 @@
 
 @layer base {
   :root {
-    --color-background: #f8fafc;
+    /* Light theme — warm cream + coral. */
+    --color-background: #f5f0e8;
     --color-surface: #ffffff;
-    --color-ink: #0f172a;
-    --color-ink-muted: #64748b;
-    --color-border: #e2e8f0;
-    --color-accent: #2563eb;
-    --color-success: #16a34a;
-    --color-warning: #d97706;
-    --color-danger: #dc2626;
+    --color-surface-2: #fbf6ec;
+    --color-surface-3: #f0e9d8;
+    --color-ink: #1f1b16;
+    --color-ink-2: #5a5247;
+    --color-ink-3: #9a9286;
+    --color-ink-4: #c3bcae;
+    --color-rule: #ece4d4;
+    --color-rule-strong: #d4cab4;
+    --color-accent: #e36b3a;
+    --color-accent-soft: #fde2d2;
+    --color-accent-ink: #a8431c;
+    --color-good: #3f8a5a;
+    --color-good-soft: #d8ecd9;
+    --color-warn: #b8821e;
+    --color-warn-soft: #f4e3b8;
+    --color-bad: #c64a3a;
+    --color-bad-soft: #f7d8d2;
   }
 
   .dark {
-    --color-background: #0b1220;
-    --color-surface: #111827;
-    --color-ink: #e2e8f0;
-    --color-ink-muted: #94a3b8;
-    --color-border: #1f2937;
-    --color-accent: #60a5fa;
-    --color-success: #4ade80;
-    --color-warning: #fbbf24;
-    --color-danger: #f87171;
+    /* Dark theme — warm browns, retain coral identity. */
+    --color-background: #1a1612;
+    --color-surface: #221d18;
+    --color-surface-2: #2a2520;
+    --color-surface-3: #322c26;
+    --color-ink: #f0e8db;
+    --color-ink-2: #c0b8a8;
+    --color-ink-3: #847b6c;
+    --color-ink-4: #564f43;
+    --color-rule: #322c26;
+    --color-rule-strong: #463e35;
+    --color-accent: #ff8456;
+    --color-accent-soft: #4a2818;
+    --color-accent-ink: #ffaa7a;
+    --color-good: #6fb685;
+    --color-good-soft: #1f3a26;
+    --color-warn: #d4a445;
+    --color-warn-soft: #3a2d12;
+    --color-bad: #e2664f;
+    --color-bad-soft: #3a1f18;
   }
 
   html,
@@ -37,7 +59,6 @@
     font-family: theme('fontFamily.sans');
   }
 
-  /* Keep native date inputs readable in dark mode */
   .dark input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.7;
@@ -46,6 +67,15 @@
 
 @layer components {
   .card {
-    @apply bg-surface border border-border rounded-lg shadow-card;
+    @apply bg-surface border border-rule rounded-mb-3 shadow-card;
+  }
+
+  .card-soft {
+    @apply bg-surface-2 border border-rule rounded-mb-3 shadow-card;
+  }
+
+  /* Used for code-y identifiers — invoice ids, stock codes. */
+  .mono {
+    font-family: theme('fontFamily.mono');
   }
 }

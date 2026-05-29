@@ -31,7 +31,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit
 
-from app.schemas.forecasting import ForecastPoint, ForecastSummary
+from app.schemas.forecasting import FeatureImportance, ForecastPoint, ForecastSummary
 from app.services.data_service import load_transactions
 from ml.artifacts import FORECAST_ARTIFACT
 
@@ -210,6 +210,15 @@ def build_artifacts(df: pd.DataFrame | None = None) -> ForecastArtifacts:
     valid_start = features.index[valid_idx[0]].date()
     valid_end = features.index[valid_idx[-1]].date()
 
+    importances = sorted(
+        (
+            FeatureImportance(name=name, importance=round(float(value), 4))
+            for name, value in zip(FEATURE_NAMES, final_model.feature_importances_)
+        ),
+        key=lambda x: x.importance,
+        reverse=True,
+    )
+
     summary = ForecastSummary(
         model=MODEL_NAME,
         forecast_horizon_days=FORECAST_HORIZON_DAYS,
@@ -226,6 +235,8 @@ def build_artifacts(df: pd.DataFrame | None = None) -> ForecastArtifacts:
         validation_period_start=valid_start,
         validation_period_end=valid_end,
         features=list(FEATURE_NAMES),
+        feature_importances=importances,
+        dataset_last_date=series.index[-1].date(),
     )
 
     timeseries: list[ForecastPoint] = []

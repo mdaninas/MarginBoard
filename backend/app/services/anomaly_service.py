@@ -1,5 +1,5 @@
-# Hybrid scoring: rule-based reason codes + IsolationForest. See methodology
-# endpoint for the full write-up. Thresholds revisited in notebook 03.
+# Hybrid scoring: rule-based reason codes + IsolationForest. See
+# docs/MODEL_CARD.md for the write-up; thresholds revisited in notebook 03.
 
 from __future__ import annotations
 

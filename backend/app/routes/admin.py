@@ -11,7 +11,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Header, HTTPException, Response, status
 
 from app.config import settings
-from app.services import anomaly_service, data_service, forecast_service, inventory_service
+from app.services import (
+    analytics_service,
+    anomaly_service,
+    basket_service,
+    data_service,
+    forecast_service,
+    inventory_service,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -37,4 +44,6 @@ def refresh_caches(authorization: str | None = Header(default=None)) -> Response
     forecast_service.reset_cache()
     inventory_service.reset_cache()
     anomaly_service.reset_cache()
+    analytics_service.reset_cache()
+    basket_service.reset_cache()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

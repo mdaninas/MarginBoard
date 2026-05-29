@@ -42,7 +42,6 @@ production-minded analytics product looks like — not to demo flashy AI.
 | 30-day Forecast | GradientBoostingRegressor on lag + calendar features. Reports MAE and MAPE on a chronological 20% validation split. | External regressors (holidays, promotions, macro events). |
 | Inventory Risk | Estimated demand, deterministic simulated stock per SKU, safety stock, recommended reorder, potential lost revenue, risk level. | Real inventory. Stock is simulated and clearly labeled. |
 | Transaction Anomaly Monitoring | Hybrid: rule-based reason codes + IsolationForest score → Low / Medium / High risk. | Fraud confirmation. The dataset has no fraud labels; this is a review aid. |
-| Methodology Page | In-app documentation of dataset, cleaning, formulas, model, and limitations. | Black-box "trust me bro" output. |
 
 ---
 
@@ -59,13 +58,13 @@ production-minded analytics product looks like — not to demo flashy AI.
 > Note on currency: values are displayed in **USD notation** for portfolio
 > readability. The source dataset is in GBP from a UK retailer; no FX
 > conversion is applied. Treat figures as approximate USD-equivalent for
-> display purposes only. This is documented in the Methodology page.
+> display purposes only. This is documented in `docs/MODEL_CARD.md`.
 
 ---
 
 ## Methodology highlights
 
-> Full details on the in-app **Methodology** page and in [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md).
+> Full details in [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md).
 
 ### Revenue
 `revenue = quantity × unit_price`. Negative quantities are preserved as

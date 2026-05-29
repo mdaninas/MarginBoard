@@ -6,6 +6,11 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+class FeatureImportance(BaseModel):
+    name: str
+    importance: float
+
+
 class ForecastSummary(BaseModel):
     model: str
     forecast_horizon_days: int
@@ -22,6 +27,14 @@ class ForecastSummary(BaseModel):
     validation_period_start: date
     validation_period_end: date
     features: list[str]
+    feature_importances: list[FeatureImportance] = Field(
+        default_factory=list,
+        description="Per-feature importance from the final fitted model, sorted descending.",
+    )
+    dataset_last_date: date | None = Field(
+        default=None,
+        description="Last invoice date in the dataset. Useful client-side to label the previous-30-day window correctly.",
+    )
 
 
 class ForecastPoint(BaseModel):

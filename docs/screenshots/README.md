@@ -14,7 +14,6 @@ displays. Save as PNG. Crop to the visible viewport — no browser chrome.
 | `02-forecasting.png` | `/forecasting` | KPI cards + forecast chart with historical-to-forecast transition visible |
 | `03-inventory.png` | `/inventory` | KPI cards + simulated stock banner + risk table with mix of risk badges |
 | `04-transactions.png` | `/transactions` | KPI cards + disclaimer + at least 5 flagged rows with reason code chips |
-| `05-methodology.png` | `/methodology` | Top of page with multiple sections visible |
 | `00-hero.png` | `/overview` | Optional — cropped tighter for the README hero image |
 
 ## How to capture cleanly

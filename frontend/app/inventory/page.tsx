@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { MetricCard } from "@/components/cards/MetricCard";
+import { SectionH } from "@/components/layout/SectionH";
 import { DataTable, type Column } from "@/components/tables/DataTable";
-import { RiskBadge } from "@/components/badges/RiskBadge";
 import { LoadingState } from "@/components/states/LoadingState";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
+import { Pill } from "@/components/primitives/Pill";
+import { Tag } from "@/components/primitives/Tag";
 import { apiGet } from "@/lib/api";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n/I18nProvider";
@@ -60,86 +61,202 @@ export default function InventoryPage() {
 
   const columns: Column<InventoryProduct>[] = useMemo(
     () => [
-      { key: "description", header: t("inventory.col.product"), render: (r) => <span className="font-medium">{r.description}</span> },
-      { key: "stock_code", header: t("inventory.col.stock_code"), render: (r) => <span className="text-ink-muted">{r.stock_code}</span> },
-      { key: "estimated_demand", header: t("inventory.col.estimated_demand"), align: "right", render: (r) => formatNumber(r.estimated_demand) },
+      {
+        key: "description",
+        header: t("inventory.col.product"),
+        render: (r) => (
+          <div>
+            <div className="font-medium">{r.description}</div>
+            <div className="font-mono text-[10px] text-ink-faint">{r.stock_code}</div>
+          </div>
+        ),
+      },
+      {
+        key: "estimated_demand",
+        header: t("inventory.col.estimated_demand"),
+        align: "right",
+        render: (r) => <span className="font-mono">{formatNumber(r.estimated_demand)}</span>,
+      },
       {
         key: "simulated_stock",
         header: t("inventory.col.simulated_stock"),
         align: "right",
-        render: (r) => <span title={t("inventory.simulated_tooltip")}>{formatNumber(r.simulated_stock)}</span>,
+        render: (r) => (
+          <span className="font-mono" title={t("inventory.simulated_tooltip")}>
+            {formatNumber(r.simulated_stock)}
+          </span>
+        ),
       },
-      { key: "safety_stock", header: t("inventory.col.safety_stock"), align: "right", render: (r) => formatNumber(r.safety_stock) },
-      { key: "recommended_reorder", header: t("inventory.col.reorder"), align: "right", render: (r) => formatNumber(r.recommended_reorder) },
-      { key: "potential_lost_revenue", header: t("inventory.col.lost_revenue"), align: "right", render: (r) => formatCurrency(r.potential_lost_revenue) },
-      { key: "risk_level", header: t("inventory.col.risk"), render: (r) => <RiskBadge level={r.risk_level} /> },
+      {
+        key: "cover",
+        header: "Cover",
+        render: (r) => <CoverBar product={r} />,
+      },
+      {
+        key: "risk_level",
+        header: t("inventory.col.risk"),
+        render: (r) => (
+          <Tag tone={r.risk_level === "High" ? "bad" : r.risk_level === "Medium" ? "warn" : "good"}>
+            {tRisk(r.risk_level)}
+          </Tag>
+        ),
+      },
+      {
+        key: "reorder",
+        header: t("inventory.col.reorder"),
+        align: "right",
+        render: (r) =>
+          r.risk_level === "Low" ? (
+            <span className="font-mono text-ink-faint">—</span>
+          ) : (
+            <span className="rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] font-semibold text-surface">
+              +{formatNumber(r.recommended_reorder)}
+            </span>
+          ),
+      },
     ],
-    [t],
+    [t, tRisk],
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader title={t("inventory.title")} description={t("inventory.description")} />
-
-      <div className="card p-3 text-xs text-ink-muted border-warning/30">
-        <span className="font-medium text-warning">{t("inventory.banner_note_label")}</span>{" "}
-        {t("inventory.simulated_banner")}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow={t("inventory.title")}
+        title="Which SKUs might run out?"
+        description={t("inventory.description")}
+      />
 
       {loading && <LoadingState label={t("inventory.loading")} />}
       {error && <ErrorState message={error} onRetry={() => load(risk)} />}
 
       {!loading && !error && data && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <MetricCard
-              label={t("inventory.kpi.products_at_risk")}
-              value={formatNumber(data.summary.products_at_risk)}
-              hint={t("inventory.kpi.horizon_hint", { n: data.summary.horizon_days })}
-            />
-            <MetricCard label={t("inventory.kpi.high_risk")} value={formatNumber(data.summary.high_risk_products)} />
-            <MetricCard label={t("inventory.kpi.medium_risk")} value={formatNumber(data.summary.medium_risk_products)} />
-            <MetricCard
-              label={t("inventory.kpi.lost_revenue")}
-              value={formatCurrency(data.summary.estimated_lost_revenue)}
-            />
-            <MetricCard
-              label={t("inventory.kpi.reorder_units")}
-              value={formatNumber(data.summary.recommended_reorder_units)}
-            />
-            <MetricCard label={t("inventory.kpi.low_risk")} value={formatNumber(data.summary.low_risk_products)} />
+          {/* Simulated stock callout — uses the warning palette and an icon-bubble
+              left rail, matching the design's caveat card. */}
+          <div
+            className="rounded-mb-3 border p-4 shadow-card"
+            style={{
+              background: "color-mix(in srgb, var(--color-warn-soft) 40%, var(--color-surface))",
+              borderColor: "var(--color-warn-soft)",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warn-soft text-[13px] font-bold text-warn">
+                !
+              </span>
+              <div>
+                <p className="text-[13px] font-semibold">Stock figures are simulated</p>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-ink-muted">
+                  {t("inventory.simulated_banner")}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <RiskCard
+              label={t("inventory.kpi.high_risk")}
+              value={data.summary.high_risk_products}
+              tone="bad"
+              hint="≤ 7 days cover"
+            />
+            <RiskCard
+              label={t("inventory.kpi.medium_risk")}
+              value={data.summary.medium_risk_products}
+              tone="warn"
+              hint="≤ 30% of demand"
+            />
+            <RiskCard
+              label={t("inventory.kpi.lost_revenue")}
+              value={formatCurrency(data.summary.estimated_lost_revenue)}
+              hint="if nothing reorders"
+            />
+            <RiskCard
+              label={t("inventory.kpi.reorder_units")}
+              value={formatNumber(data.summary.recommended_reorder_units)}
+              hint={`across ${data.summary.products_at_risk} SKUs`}
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 text-sm">
             <span className="text-ink-muted">{t("common.filter_by_risk")}:</span>
             {RISK_OPTIONS.map((opt) => (
-              <button
-                key={opt.value || "all"}
-                type="button"
-                onClick={() => setRisk(opt.value)}
-                className={`px-3 py-1 rounded-md border ${
-                  risk === opt.value
-                    ? "border-accent text-accent bg-accent/5"
-                    : "border-border text-ink-muted hover:text-ink"
-                }`}
-              >
+              <Pill key={opt.value || "all"} active={risk === opt.value} onClick={() => setRisk(opt.value)}>
                 {opt.label}
-              </button>
+              </Pill>
             ))}
           </div>
 
           {data.products.length === 0 ? (
             <EmptyState />
           ) : (
-            <DataTable
-              rows={data.products}
-              rowKey={(r) => r.stock_code}
-              columns={columns}
-              caption={t("inventory.caption_top100")}
-            />
+            <div className="card overflow-hidden p-0">
+              <div className="border-b border-rule px-[18px] py-3">
+                <SectionH
+                  title="SKUs by risk"
+                  hint="sorted: potential lost revenue ↓"
+                  className="mb-0"
+                />
+              </div>
+              <DataTable
+                rows={data.products}
+                rowKey={(r) => r.stock_code}
+                columns={columns}
+              />
+            </div>
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function RiskCard({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  tone?: "bad" | "warn";
+}) {
+  const valueColor =
+    tone === "bad" ? "text-bad" : tone === "warn" ? "text-warn" : "text-ink";
+  return (
+    <div className="card p-4">
+      <p className="text-[11px] font-medium text-ink-faint">{label}</p>
+      <p className={`mt-1 text-[28px] font-semibold leading-tight tracking-[-1px] ${valueColor}`}>
+        {value}
+      </p>
+      {hint && <p className="mt-1 text-[11.5px] text-ink-muted">{hint}</p>}
+    </div>
+  );
+}
+
+function CoverBar({ product }: { product: InventoryProduct }) {
+  const ratio = product.estimated_demand
+    ? Math.max(0, Math.min(1.5, product.simulated_stock / product.estimated_demand))
+    : 0;
+  const pct = Math.min(100, (ratio / 1.5) * 100);
+  const color =
+    product.risk_level === "High"
+      ? "bg-bad"
+      : product.risk_level === "Medium"
+      ? "bg-warn"
+      : "bg-good";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
+        <span
+          className={`block h-full rounded-full ${color}`}
+          style={{ width: `${pct.toFixed(1)}%` }}
+        />
+      </span>
+      <span className="w-16 text-right font-mono text-[11px] tabular-nums text-ink-muted">
+        {(ratio * 100).toFixed(0)}% cover
+      </span>
     </div>
   );
 }

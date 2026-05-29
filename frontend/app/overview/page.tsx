@@ -2,15 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionH } from "@/components/layout/SectionH";
 import { MetricCard } from "@/components/cards/MetricCard";
-import { TrendChart } from "@/components/charts/TrendChart";
-import { DataTable, type Column } from "@/components/tables/DataTable";
 import { FilterBar, type FilterValue } from "@/components/filters/FilterBar";
 import { LoadingState } from "@/components/states/LoadingState";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
+import { Pill } from "@/components/primitives/Pill";
+import { Tag } from "@/components/primitives/Tag";
+import { Delta } from "@/components/primitives/Delta";
+import { Spark } from "@/components/primitives/Spark";
+import { BarList } from "@/components/primitives/BarList";
 import { apiGet } from "@/lib/api";
-import { formatCompact, formatCurrency, formatNumber } from "@/lib/format";
+import { formatCompact, formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n/I18nProvider";
 import type {
   CountryPerformance,
@@ -26,6 +30,7 @@ interface PageData {
   trend: RevenueTrendPoint[];
   products: TopProduct[];
   countries: CountryPerformance[];
+  countryList: string[];
 }
 
 function buildInsight(
@@ -35,9 +40,7 @@ function buildInsight(
   if (!metrics) return null;
   const rev = metrics.revenue_growth_pct;
   const ord = metrics.orders_growth_pct;
-  if (rev === null && ord === null) {
-    return t("overview.insight.no_comparison");
-  }
+  if (rev === null && ord === null) return t("overview.insight.no_comparison");
   if (rev === null) return null;
   if (rev > 0) {
     const driver =
@@ -68,17 +71,18 @@ export default function OverviewPage() {
         end: f.end || undefined,
         country: f.country || undefined,
       };
-      const [metrics, trend, products, countries] = await Promise.all([
+      const [metrics, trend, products, countries, countryList] = await Promise.all([
         apiGet<OverviewMetrics>("/overview/metrics", params),
         apiGet<RevenueTrendPoint[]>("/overview/revenue-trend", params),
-        apiGet<TopProduct[]>("/overview/top-products", { ...params, limit: 10 }),
+        apiGet<TopProduct[]>("/overview/top-products", { ...params, limit: 5 }),
         apiGet<CountryPerformance[]>("/overview/country-performance", {
           start: params.start,
           end: params.end,
-          limit: 10,
+          limit: 6,
         }),
+        apiGet<string[]>("/overview/countries"),
       ]);
-      setData({ metrics, trend, products, countries });
+      setData({ metrics, trend, products, countries, countryList });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -90,40 +94,38 @@ export default function OverviewPage() {
     load(filter);
   }, [load, filter]);
 
-  const countryOptions = useMemo(() => data?.countries.map((c) => c.country) ?? [], [data]);
+  const countryOptions = data?.countryList ?? [];
+  const datasetEnd =
+    !filter.start && !filter.end ? data?.metrics.period_end : undefined;
   const insight = useMemo(() => buildInsight(data?.metrics, t), [data, t]);
-
-  const productColumns: Column<TopProduct>[] = useMemo(
-    () => [
-      { key: "description", header: t("overview.col.product"), render: (r) => <span className="font-medium">{r.description}</span> },
-      { key: "stock_code", header: t("overview.col.stock_code"), render: (r) => <span className="text-ink-muted">{r.stock_code}</span> },
-      { key: "units_sold", header: t("overview.col.units_sold"), align: "right", render: (r) => formatNumber(r.units_sold) },
-      { key: "revenue", header: t("overview.col.revenue"), align: "right", render: (r) => formatCurrency(r.revenue) },
-      { key: "average_price", header: t("overview.col.avg_price"), align: "right", render: (r) => formatCurrency(r.average_price) },
-      { key: "order_count", header: t("overview.col.orders"), align: "right", render: (r) => formatNumber(r.order_count) },
-    ],
-    [t],
+  const trendSeries = useMemo(
+    () => data?.trend.map((p) => p.revenue) ?? [],
+    [data],
   );
-
-  const countryColumns: Column<CountryPerformance>[] = useMemo(
-    () => [
-      { key: "country", header: t("overview.col.country"), render: (r) => <span className="font-medium">{r.country}</span> },
-      { key: "revenue", header: t("overview.col.revenue"), align: "right", render: (r) => formatCurrency(r.revenue) },
-      { key: "orders", header: t("overview.col.orders"), align: "right", render: (r) => formatNumber(r.orders) },
-      { key: "units", header: t("overview.col.units"), align: "right", render: (r) => formatCompact(r.units) },
-      { key: "active_customers", header: t("overview.col.customers"), align: "right", render: (r) => formatNumber(r.active_customers) },
-    ],
-    [t],
-  );
+  const eyebrow = data
+    ? `${formatDate(data.metrics.period_start)} – ${formatDate(data.metrics.period_end)}`
+    : undefined;
 
   return (
-    <div className="space-y-6">
-      <PageHeader title={t("overview.title")} description={t("overview.description")} />
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow={eyebrow}
+        title={t("overview.title")}
+        description={t("overview.description")}
+        actions={
+          data?.metrics.period_end ? (
+            <span className="font-mono text-[11px] text-ink-faint">
+              {t("overview.kpi.active_customers")}: {formatNumber(data.metrics.active_customers)}
+            </span>
+          ) : null
+        }
+      />
 
       <FilterBar
         initial={filter}
         countries={countryOptions}
-        onApply={(v) => setFilter(v)}
+        datasetEnd={datasetEnd}
+        onApply={setFilter}
       />
 
       {loading && <LoadingState label={t("overview.loading")} />}
@@ -131,13 +133,34 @@ export default function OverviewPage() {
 
       {!loading && !error && data && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <MetricCard
-              label={t("overview.kpi.total_revenue")}
-              value={formatCurrency(data.metrics.total_revenue)}
-              delta={data.metrics.revenue_growth_pct}
-              deltaLabel={t("common.vs_previous_period")}
-            />
+          {/* Hero strip: big revenue + 2 supporting KPIs. */}
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.6fr_1fr_1fr]">
+            <div className="card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-medium text-ink-faint">
+                    {t("overview.kpi.total_revenue")} · {t("common.vs_previous_period")}
+                  </p>
+                  <p className="mt-1 text-[36px] font-semibold leading-tight tracking-[-1.2px]">
+                    {formatCurrency(data.metrics.total_revenue)}
+                  </p>
+                  {data.metrics.revenue_growth_pct !== null && (
+                    <div className="mt-1.5">
+                      <Delta
+                        value={`${data.metrics.revenue_growth_pct > 0 ? "+" : ""}${data.metrics.revenue_growth_pct.toFixed(1)}% vs prev. period`}
+                        up={data.metrics.revenue_growth_pct > 0}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              {trendSeries.length > 1 && (
+                <div className="mt-3">
+                  <Spark data={trendSeries} width={620} height={90} fill />
+                </div>
+              )}
+            </div>
+
             <MetricCard
               label={t("overview.kpi.total_orders")}
               value={formatNumber(data.metrics.total_orders)}
@@ -147,70 +170,98 @@ export default function OverviewPage() {
             <MetricCard
               label={t("overview.kpi.average_order_value")}
               value={formatCurrency(data.metrics.average_order_value)}
-            />
-            <MetricCard
-              label={t("overview.kpi.units_sold")}
-              value={formatCompact(data.metrics.units_sold)}
-            />
-            <MetricCard
-              label={t("overview.kpi.returns")}
-              value={formatNumber(data.metrics.return_count)}
-              hint={t("overview.kpi.returns_hint")}
-            />
-            <MetricCard
-              label={t("overview.kpi.active_customers")}
-              value={formatNumber(data.metrics.active_customers)}
-              hint={t("overview.kpi.customers_hint")}
+              hint={`${formatCompact(data.metrics.units_sold)} ${t("overview.kpi.units_sold").toLowerCase()}`}
             />
           </div>
 
           {insight && (
             <div className="card p-4 text-sm">
-              <p className="font-medium mb-1">{t("common.notes")}</p>
-              <p className="text-ink-muted">{insight}</p>
+              <p className="font-medium">{t("common.notes")}</p>
+              <p className="mt-1 text-ink-muted">{insight}</p>
             </div>
           )}
 
-          <section>
-            <h2 className="text-sm font-medium uppercase tracking-wide text-ink-muted mb-3">
-              {t("overview.section.revenue_trend")}
-            </h2>
-            {data.trend.length === 0 ? (
-              <EmptyState description={t("overview.empty.no_transactions")} />
-            ) : (
-              <TrendChart data={data.trend} />
-            )}
-          </section>
-
-          <section>
-            <h2 className="text-sm font-medium uppercase tracking-wide text-ink-muted mb-3">
-              {t("overview.section.top_products")}
-            </h2>
-            {data.products.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <DataTable
-                rows={data.products}
-                rowKey={(r) => r.stock_code + r.description}
-                columns={productColumns}
+          {/* Two-column body: top products list (left, wider) + country bars + returns hint (right). */}
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.4fr_1fr]">
+            <div className="card flex flex-col overflow-hidden p-[18px]">
+              <SectionH
+                title={t("overview.section.top_products")}
+                hint={`${t("common.vs_previous_period")}`}
+                right={<Pill>{t("common.all")}</Pill>}
               />
-            )}
-          </section>
+              {data.products.length === 0 ? (
+                <EmptyState description={t("overview.empty.no_transactions")} />
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {data.products.map((p, i) => (
+                    <div key={p.stock_code} className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-mb-1 border border-rule font-mono text-[10.5px] font-semibold ${
+                          i === 0
+                            ? "bg-accent-soft text-accent-ink"
+                            : "bg-surface-2 text-ink-muted"
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[12.5px] font-medium">{p.description}</div>
+                        <div className="font-mono text-[10px] text-ink-faint">
+                          {p.stock_code} · {formatNumber(p.units_sold)} units
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[13px] font-semibold">
+                          {formatCurrency(p.revenue)}
+                        </div>
+                        <div className="font-mono text-[10px] text-ink-faint">
+                          {formatCurrency(p.average_price)} avg
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <section>
-            <h2 className="text-sm font-medium uppercase tracking-wide text-ink-muted mb-3">
-              {t("overview.section.country_performance")}
-            </h2>
-            {data.countries.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <DataTable
-                rows={data.countries}
-                rowKey={(r) => r.country}
-                columns={countryColumns}
-              />
-            )}
-          </section>
+            <div className="flex flex-col gap-3">
+              <div className="card p-4">
+                <SectionH
+                  title={t("overview.section.country_performance")}
+                  hint={t("common.vs_previous_period")}
+                />
+                {data.countries.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <BarList
+                    items={data.countries.map((c) => ({
+                      label: c.country,
+                      value: c.revenue,
+                      display: formatCurrency(c.revenue),
+                    }))}
+                  />
+                )}
+              </div>
+
+              {/* Returns / quality panel — uses the same gradient pattern as
+                  the design's "Needs review" but reframed for our data shape. */}
+              <div
+                className="rounded-mb-3 border border-accent-soft p-4 shadow-card"
+                style={{
+                  background:
+                    "linear-gradient(180deg, color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)) 0%, var(--color-surface) 100%)",
+                }}
+              >
+                <SectionH
+                  title={t("overview.kpi.returns")}
+                  right={<Tag tone="accent">{formatNumber(data.metrics.return_count)}</Tag>}
+                />
+                <p className="text-[11.5px] text-ink-muted">
+                  {t("overview.kpi.returns_hint")}
+                </p>
+              </div>
+            </div>
+          </div>
         </>
       )}
     </div>

@@ -12,13 +12,13 @@ from app.middleware import RequestContextMiddleware
 from app.routes import (
     admin,
     analytics,
+    basket,
     forecasting,
     inventory,
-    methodology,
     overview,
     transactions,
 )
-from app.services import anomaly_service, forecast_service, inventory_service
+from app.services import anomaly_service, basket_service, forecast_service, inventory_service
 from ml.artifacts import ANOMALY_ARTIFACT, FORECAST_ARTIFACT, INVENTORY_ARTIFACT
 
 configure_logging()
@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             ("forecast", forecast_service.get_forecast_summary),
             ("inventory", inventory_service.get_inventory_summary),
             ("anomaly", anomaly_service.get_summary),
+            ("basket", basket_service.get_summary),
         ):
             try:
                 loader()
@@ -89,8 +90,8 @@ for router in (
     forecasting.router,
     inventory.router,
     transactions.router,
-    methodology.router,
     analytics.router,
+    basket.router,
     admin.router,
 ):
     app.include_router(router, prefix=API_PREFIX)

@@ -41,6 +41,11 @@ export interface CountryPerformance {
   active_customers: number;
 }
 
+export interface FeatureImportance {
+  name: string;
+  importance: number;
+}
+
 export interface ForecastSummary {
   model: string;
   forecast_horizon_days: number;
@@ -48,12 +53,17 @@ export interface ForecastSummary {
   previous_30_day_revenue: number;
   expected_growth_pct: number | null;
   mae: number;
+  mae_std: number;
   mape: number;
+  mape_std: number;
+  cv_folds: number;
   training_period_start: string;
   training_period_end: string;
   validation_period_start: string;
   validation_period_end: string;
   features: string[];
+  feature_importances: FeatureImportance[];
+  dataset_last_date: string | null;
 }
 
 export interface ForecastPoint {
@@ -109,17 +119,81 @@ export interface TransactionAnomaly {
   reason_codes: string[];
 }
 
-export interface MethodologySection {
-  title: string;
-  body: string[];
+// Basket — association rules / cross-sell
+
+export interface AssociationRule {
+  antecedents: string[];
+  antecedent_labels: string[];
+  consequents: string[];
+  consequent_labels: string[];
+  support: number;
+  confidence: number;
+  lift: number;
+  antecedent_support: number;
+  consequent_support: number;
 }
 
-export interface MethodologyResponse {
-  dataset: MethodologySection;
-  data_cleaning: MethodologySection;
-  revenue: MethodologySection;
-  forecasting: MethodologySection;
-  inventory: MethodologySection;
-  transactions: MethodologySection;
-  limitations: MethodologySection;
+export interface BasketSummary {
+  transactions_analyzed: number;
+  unique_items_considered: number;
+  rules_found: number;
+  min_support: number;
+  min_confidence: number;
+  note: string;
 }
+
+// Analytics — cohort, ABC, RFM
+
+export interface CohortRetentionRow {
+  cohort_month: string;
+  cohort_size: number;
+  // Retention rates keyed by months-since-first-purchase ("0", "1", "2", …).
+  retention: Record<string, number>;
+}
+
+export type ABCClass = "A" | "B" | "C";
+
+export interface ABCClassificationRow {
+  stock_code: string;
+  description: string;
+  revenue: number;
+  cumulative_share_pct: number;
+  abc_class: ABCClass;
+}
+
+export interface ABCSummary {
+  a_count: number;
+  b_count: number;
+  c_count: number;
+  a_revenue_share_pct: number;
+  b_revenue_share_pct: number;
+  c_revenue_share_pct: number;
+}
+
+export type RFMSegment =
+  | "Champions"
+  | "Loyal"
+  | "Potential Loyalist"
+  | "At Risk"
+  | "Hibernating"
+  | "Lost"
+  | "New"
+  | "Others";
+
+export interface CustomerSegment {
+  customer_id: number;
+  recency_days: number;
+  frequency: number;
+  monetary: number;
+  r_score: number;
+  f_score: number;
+  m_score: number;
+  segment: RFMSegment;
+}
+
+export interface SegmentSummary {
+  segment: RFMSegment;
+  customer_count: number;
+  revenue_share_pct: number;
+}
+

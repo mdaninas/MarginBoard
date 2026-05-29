@@ -21,6 +21,7 @@ import pytest
 from app.services import (
     analytics_service,
     anomaly_service,
+    basket_service,
     data_service,
     forecast_service,
     inventory_service,
@@ -118,6 +119,7 @@ def _patch_load_transactions(monkeypatch, synthetic_transactions):
         anomaly_service,
         metrics_service,
         analytics_service,
+        basket_service,
     ):
         monkeypatch.setattr(module, "load_transactions", _stub, raising=False)
 
@@ -125,8 +127,10 @@ def _patch_load_transactions(monkeypatch, synthetic_transactions):
     inventory_service.reset_cache()
     anomaly_service.reset_cache()
     analytics_service.reset_cache()
+    basket_service.reset_cache()
     yield
     forecast_service.reset_cache()
     inventory_service.reset_cache()
     anomaly_service.reset_cache()
     analytics_service.reset_cache()
+    basket_service.reset_cache()
