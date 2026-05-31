@@ -89,7 +89,7 @@ export default function InventoryPage() {
       },
       {
         key: "cover",
-        header: "Cover",
+        header: t("inventory.col.cover"),
         render: (r) => <CoverBar product={r} />,
       },
       {
@@ -107,7 +107,7 @@ export default function InventoryPage() {
         align: "right",
         render: (r) =>
           r.risk_level === "Low" ? (
-            <span className="font-mono text-ink-faint">—</span>
+            <span className="font-mono text-ink-faint">–</span>
           ) : (
             <span className="rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] font-semibold text-surface">
               +{formatNumber(r.recommended_reorder)}
@@ -122,7 +122,7 @@ export default function InventoryPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow={t("inventory.title")}
-        title="Which SKUs might run out?"
+        title={t("inventory.headline")}
         description={t("inventory.description")}
       />
 
@@ -131,50 +131,28 @@ export default function InventoryPage() {
 
       {!loading && !error && data && (
         <>
-          {/* Simulated stock callout — uses the warning palette and an icon-bubble
-              left rail, matching the design's caveat card. */}
-          <div
-            className="rounded-mb-3 border p-4 shadow-card"
-            style={{
-              background: "color-mix(in srgb, var(--color-warn-soft) 40%, var(--color-surface))",
-              borderColor: "var(--color-warn-soft)",
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warn-soft text-[13px] font-bold text-warn">
-                !
-              </span>
-              <div>
-                <p className="text-[13px] font-semibold">Stock figures are simulated</p>
-                <p className="mt-1 text-[11.5px] leading-relaxed text-ink-muted">
-                  {t("inventory.simulated_banner")}
-                </p>
-              </div>
-            </div>
-          </div>
-
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <RiskCard
               label={t("inventory.kpi.high_risk")}
               value={data.summary.high_risk_products}
               tone="bad"
-              hint="≤ 7 days cover"
+              hint={t("inventory.cover_hint")}
             />
             <RiskCard
               label={t("inventory.kpi.medium_risk")}
               value={data.summary.medium_risk_products}
               tone="warn"
-              hint="≤ 30% of demand"
+              hint={t("inventory.demand_hint")}
             />
             <RiskCard
               label={t("inventory.kpi.lost_revenue")}
               value={formatCurrency(data.summary.estimated_lost_revenue)}
-              hint="if nothing reorders"
+              hint={t("inventory.lost_hint")}
             />
             <RiskCard
               label={t("inventory.kpi.reorder_units")}
               value={formatNumber(data.summary.recommended_reorder_units)}
-              hint={`across ${data.summary.products_at_risk} SKUs`}
+              hint={t("inventory.across_skus", { n: data.summary.products_at_risk })}
             />
           </div>
 
@@ -193,8 +171,8 @@ export default function InventoryPage() {
             <div className="card overflow-hidden p-0">
               <div className="border-b border-rule px-[18px] py-3">
                 <SectionH
-                  title="SKUs by risk"
-                  hint="sorted: potential lost revenue ↓"
+                  title={t("inventory.section.by_risk")}
+                  hint={t("inventory.sorted_hint")}
                   className="mb-0"
                 />
               </div>

@@ -55,7 +55,7 @@ export default function TransactionsPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow={t("transactions.title")}
-        title="Transactions that look unusual"
+        title={t("transactions.headline")}
         description={t("transactions.description")}
         actions={
           data && (
@@ -79,10 +79,6 @@ export default function TransactionsPage() {
 
       {!loading && !error && data && (
         <>
-          <div className="card-soft p-3 text-[11.5px] text-ink-muted">
-            {data.summary.disclaimer}
-          </div>
-
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <MetricCard
               label={t("transactions.kpi.reviewed")}
@@ -91,10 +87,15 @@ export default function TransactionsPage() {
             <MetricCard
               label={t("transactions.kpi.flagged")}
               value={formatNumber(data.summary.flagged_transactions)}
-              hint={`${(
-                (data.summary.flagged_transactions / data.summary.transactions_reviewed) *
-                100
-              ).toFixed(2)}% of reviewed`}
+              hint={t("transactions.pct_reviewed", {
+                pct: data.summary.transactions_reviewed > 0
+                  ? (
+                      (data.summary.flagged_transactions /
+                        data.summary.transactions_reviewed) *
+                      100
+                    ).toFixed(2)
+                  : "0.00",
+              })}
             />
             <MetricCard
               label={t("transactions.kpi.returns")}
@@ -112,7 +113,7 @@ export default function TransactionsPage() {
             <div className="card overflow-hidden p-0">
               <div className="border-b border-rule px-[18px] py-3">
                 <SectionH
-                  title="Open queue"
+                  title={t("transactions.open_queue")}
                   hint={t("transactions.caption_top100")}
                   className="mb-0"
                 />
@@ -125,6 +126,7 @@ export default function TransactionsPage() {
                     first={idx === 0}
                     tRisk={tRisk}
                     tReason={tReason}
+                    tUnits={t("common.units")}
                   />
                 ))}
               </div>
@@ -141,11 +143,13 @@ function AnomalyRow({
   first,
   tRisk,
   tReason,
+  tUnits,
 }: {
   row: TransactionAnomaly;
   first: boolean;
   tRisk: (level: "Low" | "Medium" | "High") => string;
   tReason: (key: string) => string;
+  tUnits: string;
 }) {
   const railColor =
     row.risk_level === "High" ? "bg-bad" : row.risk_level === "Medium" ? "bg-warn" : "bg-ink-faint";
@@ -191,7 +195,7 @@ function AnomalyRow({
         </div>
         <div className="font-mono text-[10px] text-ink-faint">
           {row.quantity > 0 ? "+" : ""}
-          {row.quantity} units · {formatCurrency(row.unit_price)}/u
+          {row.quantity} {tUnits} · {formatCurrency(row.unit_price)}/u
         </div>
       </div>
       <div className="flex items-center gap-2">

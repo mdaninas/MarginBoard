@@ -1,20 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionH } from "@/components/layout/SectionH";
 import { MetricCard } from "@/components/cards/MetricCard";
 import { DataTable, type Column } from "@/components/tables/DataTable";
 import { CohortHeatmap } from "@/components/charts/CohortHeatmap";
+import { SegmentShareChartLazy } from "@/components/charts/lazy";
 import { LoadingState } from "@/components/states/LoadingState";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -22,7 +14,6 @@ import { Tag } from "@/components/primitives/Tag";
 import { apiGet } from "@/lib/api";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n/I18nProvider";
-import { useThemeColors } from "@/lib/theme/ThemeProvider";
 import type {
   CohortRetentionRow,
   CustomerSegment,
@@ -38,7 +29,6 @@ interface PageData {
 
 export default function CustomersPage() {
   const { t } = useTranslation();
-  const colors = useThemeColors();
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,7 +126,7 @@ export default function CustomersPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow={t("customers.title")}
-        title="Who are our most valuable customers?"
+        title={t("customers.headline")}
         description={t("customers.description")}
       />
 
@@ -150,12 +140,12 @@ export default function CustomersPage() {
             <MetricCard
               label={t("customers.kpi.champions")}
               value={formatNumber(kpis.champions?.customer_count ?? 0)}
-              hint={`${(kpis.champions?.revenue_share_pct ?? 0).toFixed(1)}% revenue`}
+              hint={t("common.pct_revenue", { pct: (kpis.champions?.revenue_share_pct ?? 0).toFixed(1) })}
             />
             <MetricCard
-              label="Loyal"
+              label={t("segment.Loyal")}
               value={formatNumber(kpis.loyal?.customer_count ?? 0)}
-              hint={`${(kpis.loyal?.revenue_share_pct ?? 0).toFixed(1)}% revenue`}
+              hint={t("common.pct_revenue", { pct: (kpis.loyal?.revenue_share_pct ?? 0).toFixed(1) })}
             />
             <MetricCard
               label={t("customers.kpi.at_risk")}
@@ -168,7 +158,7 @@ export default function CustomersPage() {
             {/* Top customers table */}
             <div className="card overflow-hidden p-0">
               <div className="border-b border-rule px-[18px] py-3">
-                <SectionH title={t("customers.section.top_customers")} hint="by spend · 12mo" className="mb-0" />
+                <SectionH title={t("customers.section.top_customers")} hint={t("customers.by_spend")} className="mb-0" />
               </div>
               {data.customers.length === 0 ? (
                 <EmptyState description={t("customers.empty.no_customers")} />
@@ -183,55 +173,17 @@ export default function CustomersPage() {
 
             {/* Segment distribution */}
             <div className="card p-[18px]">
-              <SectionH title={t("customers.section.segments")} hint="% of revenue" />
+              <SectionH title={t("customers.section.segments")} hint={t("customers.pct_of_revenue")} />
               {segmentChartData.length === 0 ? (
                 <EmptyState description={t("customers.empty.no_customers")} />
               ) : (
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={segmentChartData}
-                      layout="vertical"
-                      margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-                      <XAxis
-                        type="number"
-                        tick={{ fontSize: 11, fill: colors.inkFaint }}
-                        tickFormatter={(v) => `${v}%`}
-                        stroke={colors.border}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="segment"
-                        tick={{ fontSize: 11, fill: colors.ink }}
-                        width={110}
-                        stroke={colors.border}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: 12,
-                          border: `1px solid ${colors.border}`,
-                          backgroundColor: colors.surface,
-                          color: colors.ink,
-                          fontSize: 12,
-                        }}
-                        formatter={(value: number, key) =>
-                          key === "revenue_share"
-                            ? [`${value.toFixed(1)}%`, t("customers.col.revenue_share")]
-                            : [formatNumber(value), t("customers.col.customer_count")]
-                        }
-                      />
-                      <Bar dataKey="revenue_share" fill={colors.accent} radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <SegmentShareChartLazy data={segmentChartData} />
               )}
             </div>
           </div>
 
           <div className="card p-[18px]">
-            <SectionH title={t("customers.section.cohort")} hint="rows = first-purchase month · cols = months later" />
+            <SectionH title={t("customers.section.cohort")} hint={t("customers.cohort_hint")} />
             {data.cohort.length === 0 ? (
               <EmptyState description={t("customers.empty.no_customers")} />
             ) : (

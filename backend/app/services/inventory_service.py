@@ -12,7 +12,7 @@ import joblib
 import pandas as pd
 
 from app.schemas.inventory import InventoryProduct, InventorySummary
-from app.services.data_service import load_transactions
+from app.services.data_service import load_transactions, product_skus_only
 from ml.artifacts import INVENTORY_ARTIFACT
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ def _classify(stock_gap: float, estimated_demand: float) -> str:
 def build_artifacts(df: pd.DataFrame | None = None) -> InventoryArtifacts:
     """Compute inventory risk products + summary. Public entry for training."""
     if df is None:
-        df = load_transactions()
+        df = product_skus_only(load_transactions())
     return _compute(df)
 
 

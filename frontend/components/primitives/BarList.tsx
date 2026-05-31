@@ -18,7 +18,7 @@ interface Props {
 }
 
 /**
- * Horizontal bar list — label · bar · value. Cheap visualisation when
+ * Horizontal bar list: label, bar, value. Cheap visualisation when
  * a full chart would be overkill (country breakdown, segment share, etc.).
  */
 export function BarList({

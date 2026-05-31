@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * Inline ▲/▼ pill — green for up, red for down. Use to label growth
+ * Inline ▲/▼ pill, green for up and red for down. Use to label growth
  * percentages next to a metric.
  */
 export function Delta({ value, up, tone = "auto", className }: Props) {

@@ -18,7 +18,7 @@ const TONES: Record<Tone, string> = {
 };
 
 /**
- * Small monospace status chip — uppercased identifiers, percentages,
+ * Small monospace status chip for uppercased identifiers, percentages,
  * risk levels. Distinct from `Pill` (which is a button-style control).
  */
 export function Tag({ tone = "neutral", children, className }: Props) {

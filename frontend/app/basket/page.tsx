@@ -111,7 +111,7 @@ export default function BasketPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow={t("basket.title")}
-        title="What sells together?"
+        title={t("basket.headline")}
         description={t("basket.description")}
       />
 
@@ -120,16 +120,6 @@ export default function BasketPage() {
 
       {!loading && !error && data && (
         <>
-          <div className="card-soft space-y-1 p-3 text-[11.5px] text-ink-muted">
-            <p>{data.summary.note}</p>
-            <p>
-              {t("basket.thresholds_note", {
-                support: (data.summary.min_support * 100).toFixed(2),
-                confidence: (data.summary.min_confidence * 100).toFixed(0),
-              })}
-            </p>
-          </div>
-
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <MetricCard
               label={t("basket.kpi.transactions")}
@@ -147,16 +137,16 @@ export default function BasketPage() {
           </div>
 
           <div className="card p-4">
-            <SectionH title="Reading these numbers" />
+            <SectionH title={t("basket.reading")} />
             <div className="grid grid-cols-1 gap-2 text-[12.5px] text-ink-muted sm:grid-cols-3">
               <p>
-                <span className="font-semibold text-ink">Support</span> — fraction of baskets containing both sets.
+                <span className="font-semibold text-ink">{t("basket.col.support")}:</span> {t("basket.support_def")}
               </p>
               <p>
-                <span className="font-semibold text-ink">Confidence</span> — P(B in basket | A in basket).
+                <span className="font-semibold text-ink">{t("basket.col.confidence")}:</span> {t("basket.confidence_def")}
               </p>
               <p>
-                <span className="font-semibold text-ink">Lift</span> — confidence ÷ baseline. Above 1× means co-occurrence beats chance.
+                <span className="font-semibold text-ink">{t("basket.col.lift")}:</span> {t("basket.lift_def")}
               </p>
             </div>
           </div>
@@ -185,7 +175,7 @@ export default function BasketPage() {
             <div className="card overflow-hidden p-0">
               <div className="border-b border-rule px-[18px] py-3">
                 <SectionH
-                  title="Strongest pairs"
+                  title={t("basket.strongest")}
                   hint={t("basket.caption", { n: data.rules.length })}
                   className="mb-0"
                 />

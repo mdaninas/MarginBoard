@@ -66,7 +66,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [theme, setTheme, toggle],
   );
 
-  // Render children immediately — no visibility:hidden gate that could cause
+  // Render children immediately,no visibility:hidden gate that could cause
   // a permanent blank page if hydration errors. A brief light→dark flash on
   // dark-mode users is the acceptable trade-off.
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

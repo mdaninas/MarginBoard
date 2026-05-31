@@ -26,7 +26,7 @@ from mlxtend.frequent_patterns import association_rules, fpgrowth
 from mlxtend.preprocessing import TransactionEncoder
 
 from app.schemas.basket import AssociationRule, BasketSummary
-from app.services.data_service import load_transactions
+from app.services.data_service import load_transactions, product_skus_only
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ def _get_or_compute() -> _BasketArtifacts:
     with _lock:
         if _cached is None:
             logger.info("Computing market basket rules …")
-            _cached = _build(load_transactions())
+            _cached = _build(product_skus_only(load_transactions()))
         return _cached
 
 

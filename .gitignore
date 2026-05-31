@@ -12,21 +12,37 @@ env/
 .ruff_cache/
 *.egg-info/
 
+# Test / coverage artifacts
+**/.coverage
+**/.coverage.*
+coverage.xml
+htmlcov/
+
+# Logs
+*.log
+
+# Secrets / local env — keep the .example templates tracked.
+.env
+.env.*
+!.env.example
+
 # Data
 backend/data/raw/*
 !backend/data/raw/.gitkeep
 backend/data/processed/*
 !backend/data/processed/.gitkeep
 
-# Node
+# Node / Next.js
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 
-# IDE
+# Editors / tooling
 .vscode/
 .idea/
 *.swp
+.claude/
 
 # OS
 .DS_Store

@@ -164,10 +164,15 @@ def _compute(df: pd.DataFrame) -> AnomalyArtifacts:
         disclaimer=DISCLAIMER,
     )
 
+    # Keep the top-N per risk level, not just the global top-N. Otherwise, when
+    # High-risk transactions dominate the highest scores, filtering by "Medium"
+    # would return nothing even though many medium-risk rows exist.
     flagged_df = (
         work[flagged_mask]
         .sort_values("anomaly_score", ascending=False)
+        .groupby("risk_level", group_keys=False)
         .head(500)
+        .sort_values("anomaly_score", ascending=False)
     )
 
     flagged: list[TransactionAnomaly] = []

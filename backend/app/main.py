@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import joblib
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,8 +19,19 @@ from app.routes import (
     overview,
     transactions,
 )
-from app.services import anomaly_service, basket_service, forecast_service, inventory_service
-from ml.artifacts import ANOMALY_ARTIFACT, FORECAST_ARTIFACT, INVENTORY_ARTIFACT
+from app.services import (
+    analytics_service,
+    anomaly_service,
+    basket_service,
+    forecast_service,
+    inventory_service,
+)
+from ml.artifacts import (
+    ANOMALY_ARTIFACT,
+    FORECAST_ARTIFACT,
+    INVENTORY_ARTIFACT,
+    ensure_dir,
+)
 
 configure_logging()
 logger = get_logger(__name__)
@@ -35,11 +47,34 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """
     if settings.prewarm_on_startup:
         logger.info("startup.prewarm.begin")
+        # First: ensure heavy ML artifacts are written to disk. If they
+        # already exist, the underlying build call short-circuits to load().
+        # If not, this builds AND persists them so the *next* restart is fast.
+        ensure_dir()
+        for label, build_fn, artifact_path in (
+            ("forecast", forecast_service.build_artifacts, FORECAST_ARTIFACT),
+            ("inventory", inventory_service.build_artifacts, INVENTORY_ARTIFACT),
+            ("anomaly", anomaly_service.build_artifacts, ANOMALY_ARTIFACT),
+        ):
+            if artifact_path.exists():
+                continue
+            try:
+                logger.info("startup.artifact.building", module=label)
+                artifact = build_fn()
+                joblib.dump(artifact, artifact_path, compress=3)
+                logger.info("startup.artifact.saved", module=label, path=str(artifact_path))
+            except Exception as exc:
+                logger.warning("startup.artifact.failed", module=label, error=str(exc))
+
+        # Then: warm in-process caches for the lighter analytics views too.
         for label, loader in (
             ("forecast", forecast_service.get_forecast_summary),
             ("inventory", inventory_service.get_inventory_summary),
             ("anomaly", anomaly_service.get_summary),
             ("basket", basket_service.get_summary),
+            ("abc", analytics_service.get_abc_summary),
+            ("segments", analytics_service.get_segment_summary),
+            ("cohort", analytics_service.get_cohort_retention),
         ):
             try:
                 loader()

@@ -204,6 +204,47 @@ def load_transactions(force_rebuild: bool = False) -> pd.DataFrame:
         return _cached_frame
 
 
+# Stock codes that are not real products — postage, manual adjustments,
+# bank charges, test rows, etc. These inflate inventory and product reports
+# even though they have no SKU semantics. Filter them out for those views
+# (revenue overview still counts them because the money is real).
+_NON_PRODUCT_CODES: frozenset[str] = frozenset(
+    {
+        "POST",          # postage
+        "DOT",           # dotcom postage
+        "M",             # manual
+        "D",             # discount
+        "C2",            # carriage
+        "BANK CHARGES",
+        "AMAZONFEE",
+        "CRUK",          # CRUK commission
+        "TEST001",
+        "TEST002",
+        "PADS",
+        "B",             # adjust bad debt
+        "S",             # samples
+        "ADJUST",
+        "ADJUST2",
+        "gift_0001_10",
+        "gift_0001_20",
+        "gift_0001_30",
+        "gift_0001_40",
+        "gift_0001_50",
+        "gift_0001_80",
+        "gift_0001_100",
+    }
+)
+
+
+def product_skus_only(df: pd.DataFrame) -> pd.DataFrame:
+    """Return only rows whose stock_code looks like a real product.
+
+    Used by inventory / product / basket views. Revenue / KPI views keep
+    the full frame so totals still reconcile against the source data.
+    """
+    return df[~df["stock_code"].astype(str).isin(_NON_PRODUCT_CODES)]
+
+
 def reset_cache() -> None:
     """Drop the in-process cache. Mostly useful for tests."""
     global _cached_frame

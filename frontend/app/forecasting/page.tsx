@@ -1,18 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionH } from "@/components/layout/SectionH";
-import { ForecastChart } from "@/components/charts/ForecastChart";
+import { ForecastChartLazy, FeatureImportanceChartLazy } from "@/components/charts/lazy";
 import { LoadingState } from "@/components/states/LoadingState";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -21,7 +12,6 @@ import { Tag } from "@/components/primitives/Tag";
 import { apiGet } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n/I18nProvider";
-import { useThemeColors } from "@/lib/theme/ThemeProvider";
 import type { ForecastPoint, ForecastSummary } from "@/types/api";
 
 interface PageData {
@@ -31,7 +21,6 @@ interface PageData {
 
 export default function ForecastingPage() {
   const { t } = useTranslation();
-  const colors = useThemeColors();
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,22 +49,24 @@ export default function ForecastingPage() {
     ? data.summary.mape_std > 0
       ? `${data.summary.mape.toFixed(2)}% ± ${data.summary.mape_std.toFixed(2)}%`
       : `${data.summary.mape.toFixed(2)}%`
-    : "—";
+    : "–";
 
   const importance = useMemo(
     () =>
       data?.summary.feature_importances.map((f) => ({
-        name: f.name,
+        // Translate the raw feature code (e.g. "lag_1") to a readable label;
+        // fall back to the raw name if no translation key exists.
+        name: t(`feature.${f.name}`) === `feature.${f.name}` ? f.name : t(`feature.${f.name}`),
         importance: f.importance,
       })) ?? [],
-    [data],
+    [data, t],
   );
 
   return (
     <div className="space-y-5">
       <PageHeader
         eyebrow={t("forecasting.title")}
-        title="Where is revenue heading?"
+        title={t("forecasting.headline")}
         description={t("forecasting.description")}
         actions={
           data && (
@@ -94,7 +85,7 @@ export default function ForecastingPage() {
 
       {!loading && !error && data && (
         <>
-          {/* Hero card — big forecast number + chart side by side. */}
+          {/* Hero card: big forecast number plus chart, side by side. */}
           <div className="card p-5">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-[auto_1fr] md:gap-8">
               <div className="md:max-w-[320px]">
@@ -111,32 +102,34 @@ export default function ForecastingPage() {
                   </Tag>
                 </div>
                 <p className="mt-3 text-[12.5px] leading-relaxed text-ink-muted">
-                  <span className="font-semibold text-ink">Read as: </span>
-                  expected revenue near {formatCurrency(data.summary.forecasted_revenue)},
-                  with mean error of {mapeLabel} across {data.summary.cv_folds}-fold
-                  TimeSeriesSplit on the held-out tail.
+                  <span className="font-semibold text-ink">{t("forecasting.read_as_label")} </span>
+                  {t("forecasting.read_as_body", {
+                    value: formatCurrency(data.summary.forecasted_revenue),
+                    mape: mapeLabel,
+                    folds: data.summary.cv_folds,
+                  })}
                 </p>
               </div>
 
               <div>
                 <div className="mb-2 flex justify-between text-[11px] text-ink-faint">
                   <span>
-                    {formatDate(data.summary.training_period_start)} —{" "}
+                    {formatDate(data.summary.training_period_start)} –{" "}
                     {formatDate(data.summary.validation_period_end)}
                   </span>
                   <div className="flex gap-4">
                     <span className="flex items-center gap-1">
-                      <span className="inline-block h-0.5 w-3.5 bg-ink" /> historical
+                      <span className="inline-block h-0.5 w-3.5 bg-ink" /> {t("forecasting.legend.historical")}
                     </span>
                     <span className="flex items-center gap-1">
-                      <span className="inline-block h-0.5 w-3.5 bg-accent" /> forecast
+                      <span className="inline-block h-0.5 w-3.5 bg-accent" /> {t("forecasting.legend.forecast")}
                     </span>
                   </div>
                 </div>
                 {data.timeseries.length === 0 ? (
                   <EmptyState />
                 ) : (
-                  <ForecastChart data={data.timeseries} />
+                  <ForecastChartLazy data={data.timeseries} />
                 )}
               </div>
             </div>
@@ -154,25 +147,25 @@ export default function ForecastingPage() {
           {/* Lower row: model details + feature importance + cv info */}
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <div className="card p-[18px]">
-              <SectionH title={t("forecasting.model.title")} hint="how this number was made" />
+              <SectionH title={t("forecasting.model.title")} hint={t("forecasting.model.hint")} />
               <div className="flex flex-col gap-2 text-[12.5px]">
                 {[
                   [t("forecasting.model.model_label"), data.summary.model],
                   [
                     t("forecasting.model.features_label"),
-                    `${data.summary.features.length} cols`,
+                    t("forecasting.cols", { n: data.summary.features.length }),
                   ],
                   [
-                    "Training",
+                    t("forecasting.row.training"),
                     `${formatDate(data.summary.training_period_start)} → ${formatDate(
                       data.summary.training_period_end,
                     )}`,
                   ],
                   [
-                    "Validation",
-                    `${data.summary.cv_folds}-fold CV (TimeSeriesSplit)`,
+                    t("forecasting.row.validation"),
+                    t("forecasting.cv_value", { n: data.summary.cv_folds }),
                   ],
-                  ["Validation MAPE", mapeLabel],
+                  [t("forecasting.kpi.validation_mape"), mapeLabel],
                 ].map(([l, v]) => (
                   <div
                     key={l}
@@ -188,50 +181,12 @@ export default function ForecastingPage() {
             <div className="card p-[18px] lg:col-span-2">
               <SectionH
                 title={t("forecasting.section.feature_importance")}
-                hint="how strongly each feature shapes the model"
+                hint={t("forecasting.fi_hint")}
               />
               {importance.length === 0 ? (
                 <EmptyState />
               ) : (
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={importance}
-                      layout="vertical"
-                      margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-                      <XAxis
-                        type="number"
-                        tick={{ fontSize: 11, fill: colors.inkFaint }}
-                        tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                        domain={[0, "dataMax"]}
-                        stroke={colors.border}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        tick={{ fontSize: 11, fill: colors.ink }}
-                        width={110}
-                        stroke={colors.border}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: 12,
-                          border: `1px solid ${colors.border}`,
-                          backgroundColor: colors.surface,
-                          color: colors.ink,
-                          fontSize: 12,
-                        }}
-                        formatter={(value: number) => [
-                          `${(value * 100).toFixed(2)}%`,
-                          t("forecasting.col.importance"),
-                        ]}
-                      />
-                      <Bar dataKey="importance" fill={colors.accent} radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <FeatureImportanceChartLazy data={importance} />
               )}
             </div>
           </div>

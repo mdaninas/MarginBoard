@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useThemeColors } from "@/lib/theme/ThemeProvider";
 
 interface Props {
-  /** Numeric series. Length is free — we'll resample to fit width. */
+  /** Numeric series. Length is free; we resample to fit the width. */
   data?: number[];
   width?: number;
   height?: number;

@@ -6,7 +6,7 @@ interface Props {
 }
 
 /**
- * MarginBoard mark — a ring enclosing an upward revenue trendline with an
+ * MarginBoard mark: a ring enclosing an upward revenue trendline with an
  * endpoint dot. Colors resolve to theme CSS variables so the mark flips with
  * light/dark mode automatically:
  *   ring + dot  → --color-ink      (warm near-black / cream)

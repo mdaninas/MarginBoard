@@ -94,7 +94,7 @@ export function FilterBar({
 
       {datasetEnd && (
         <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-rule pt-3 text-xs">
-          <span className="text-ink-faint">Quick range:</span>
+          <span className="text-ink-faint">{t("common.quick_range")}</span>
           {presetsFor(datasetEnd).map((preset) => (
             <Pill
               key={preset.key}

@@ -16,7 +16,7 @@ interface Props<T> {
 
 /**
  * Plain HTML table styled for the cream palette. First row gets a faint
- * accent tint — useful for emphasising "top by metric" tables.
+ * accent tint, useful for emphasising "top by metric" tables.
  */
 export function DataTable<T>({ columns, rows, rowKey, caption }: Props<T>) {
   return (

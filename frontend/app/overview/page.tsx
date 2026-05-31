@@ -147,7 +147,7 @@ export default function OverviewPage() {
                   {data.metrics.revenue_growth_pct !== null && (
                     <div className="mt-1.5">
                       <Delta
-                        value={`${data.metrics.revenue_growth_pct > 0 ? "+" : ""}${data.metrics.revenue_growth_pct.toFixed(1)}% vs prev. period`}
+                        value={`${data.metrics.revenue_growth_pct > 0 ? "+" : ""}${data.metrics.revenue_growth_pct.toFixed(1)}% ${t("common.vs_previous_period")}`}
                         up={data.metrics.revenue_growth_pct > 0}
                       />
                     </div>
@@ -207,7 +207,7 @@ export default function OverviewPage() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[12.5px] font-medium">{p.description}</div>
                         <div className="font-mono text-[10px] text-ink-faint">
-                          {p.stock_code} · {formatNumber(p.units_sold)} units
+                          {p.stock_code} · {formatNumber(p.units_sold)} {t("common.units")}
                         </div>
                       </div>
                       <div className="text-right">
@@ -215,7 +215,7 @@ export default function OverviewPage() {
                           {formatCurrency(p.revenue)}
                         </div>
                         <div className="font-mono text-[10px] text-ink-faint">
-                          {formatCurrency(p.average_price)} avg
+                          {formatCurrency(p.average_price)} {t("common.avg")}
                         </div>
                       </div>
                     </div>
@@ -243,7 +243,7 @@ export default function OverviewPage() {
                 )}
               </div>
 
-              {/* Returns / quality panel — uses the same gradient pattern as
+              {/* Returns / quality panel: uses the same gradient pattern as
                   the design's "Needs review" but reframed for our data shape. */}
               <div
                 className="rounded-mb-3 border border-accent-soft p-4 shadow-card"

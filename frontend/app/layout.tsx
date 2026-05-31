@@ -21,7 +21,7 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "MarginBoard",
   description:
-    "Retail operations dashboard — revenue, forecasting, inventory risk, and transaction anomaly monitoring built on the Online Retail II dataset.",
+    "Retail operations dashboard for revenue, forecasting, inventory risk, and transaction anomaly monitoring, built on the Online Retail II dataset.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml", media: "(prefers-color-scheme: light)" },

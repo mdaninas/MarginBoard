@@ -37,10 +37,13 @@ def resolve_range(
     dataset_min: date,
     dataset_max: date,
 ) -> DateRange:
-    """Resolve a requested range against the dataset bounds.
+    """Resolve a requested range, defaulting missing bounds to the dataset.
 
-    Missing values fall back to the dataset bounds. The range is also clamped
-    inside the dataset bounds so previous-period math stays well-defined.
+    The requested dates are returned **as-is** rather than clamped to the
+    dataset window. Clamping silently rewrote out-of-range requests to the
+    nearest dataset boundary — e.g. a 2020-01-01 request returned the last
+    day of 2011 — which is misleading. Letting the filter return zero rows
+    for non-overlapping windows is the honest behaviour.
     """
     parsed_start = parse_iso_date(start) or dataset_min
     parsed_end = parse_iso_date(end) or dataset_max
@@ -48,14 +51,7 @@ def resolve_range(
     if parsed_start > parsed_end:
         raise ValueError("start date must be on or before end date.")
 
-    clamped_start = max(parsed_start, dataset_min)
-    clamped_end = min(parsed_end, dataset_max)
-
-    if clamped_start > clamped_end:
-        # Requested window sits entirely outside the dataset.
-        return DateRange(start=dataset_min, end=dataset_min)
-
-    return DateRange(start=clamped_start, end=clamped_end)
+    return DateRange(start=parsed_start, end=parsed_end)
 
 
 def safe_growth_pct(current: float, previous: float) -> float | None:

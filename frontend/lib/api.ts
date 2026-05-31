@@ -18,15 +18,22 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
   return url.toString();
 }
 
-export async function apiGet<T>(
-  path: string,
-  params?: Record<string, string | number | undefined | null>,
-  init?: RequestInit,
-): Promise<T> {
-  const res = await fetch(buildUrl(path, params), {
+// In-memory response cache. The Online Retail II dataset is historical and
+// immutable, so a successful GET for a given URL never changes within a
+// session. Caching the resolved promise makes re-navigating to a page
+// instant,no network round trip, no loading flash,and also de-duplicates
+// the parallel requests a page fires on mount. Failed requests are evicted so
+// they can be retried.
+const responseCache = new Map<string, Promise<unknown>>();
+
+export function clearApiCache(): void {
+  responseCache.clear();
+}
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
     ...init,
     headers: { Accept: "application/json", ...(init?.headers ?? {}) },
-    cache: "no-store",
   });
   if (!res.ok) {
     let detail = res.statusText;
@@ -39,4 +46,27 @@ export async function apiGet<T>(
     throw new ApiError(detail, res.status);
   }
   return (await res.json()) as T;
+}
+
+export async function apiGet<T>(
+  path: string,
+  params?: Record<string, string | number | undefined | null>,
+  init?: RequestInit & { noCache?: boolean },
+): Promise<T> {
+  const url = buildUrl(path, params);
+  const { noCache, ...fetchInit } = init ?? {};
+
+  if (!noCache) {
+    const cached = responseCache.get(url);
+    if (cached) return cached as Promise<T>;
+  }
+
+  const promise = fetchJson<T>(url, fetchInit).catch((err) => {
+    // Don't cache failures,allow the next call (e.g. "Try again") to retry.
+    responseCache.delete(url);
+    throw err;
+  });
+
+  if (!noCache) responseCache.set(url, promise);
+  return promise;
 }

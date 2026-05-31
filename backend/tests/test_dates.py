@@ -49,9 +49,17 @@ class TestResolveRange:
         assert r.start == date(2011, 1, 1)
         assert r.end == date(2011, 12, 31)
 
-    def test_clamps_to_dataset_bounds(self):
-        # Requested range extends before dataset start
+    def test_returns_requested_dates_as_is(self):
+        # resolve_range intentionally does NOT clamp to the dataset window —
+        # an out-of-range request passes through so the downstream filter can
+        # honestly return zero rows instead of silently snapping to a boundary.
         r = resolve_range("2010-06-01", "2011-06-30", date(2011, 1, 1), date(2011, 12, 31))
+        assert r.start == date(2010, 6, 1)
+        assert r.end == date(2011, 6, 30)
+
+    def test_missing_bound_falls_back_to_dataset(self):
+        # Only missing bounds default to the dataset min/max.
+        r = resolve_range(None, "2011-06-30", date(2011, 1, 1), date(2011, 12, 31))
         assert r.start == date(2011, 1, 1)
         assert r.end == date(2011, 6, 30)
 

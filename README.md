@@ -1,140 +1,114 @@
 # MarginBoard
 
-[![backend ci](https://github.com/USER/marginboard-retail-ops/actions/workflows/backend.yml/badge.svg)](https://github.com/USER/marginboard-retail-ops/actions/workflows/backend.yml)
-[![frontend ci](https://github.com/USER/marginboard-retail-ops/actions/workflows/frontend.yml/badge.svg)](https://github.com/USER/marginboard-retail-ops/actions/workflows/frontend.yml)
-[![python](https://img.shields.io/badge/python-3.11%20%7C%203.13-blue.svg)](https://www.python.org/)
-[![code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![license: mit](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![backend ci](https://github.com/mdaninas/MarginBoard/actions/workflows/backend.yml/badge.svg)](https://github.com/mdaninas/MarginBoard/actions/workflows/backend.yml)
+[![frontend ci](https://github.com/mdaninas/MarginBoard/actions/workflows/frontend.yml/badge.svg)](https://github.com/mdaninas/MarginBoard/actions/workflows/frontend.yml)
+[![python 3.11–3.13](https://img.shields.io/badge/python-3.11%E2%80%933.13-blue.svg)](https://www.python.org/)
+[![license: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-> Turn retail transactions into revenue, inventory, and risk decisions.
+> Turn historical retail transactions into revenue, customer, inventory, and risk decisions.
 
 MarginBoard is a full-stack retail operations dashboard built on the
-**Online Retail II** dataset (UCI). It surfaces revenue KPIs, a 30-day
-revenue forecast, simulated inventory risk, and transaction anomaly
-monitoring — with transparent methodology and honest limitations.
+**Online Retail II** dataset (UCI) — roughly 1.07M cleaned transactions from a
+UK online retailer, Dec 2009 to Dec 2011. It answers the questions a retail ops,
+finance, or merchandising team actually asks: how much did we make, where is
+revenue heading, who are the best customers, what sells together, which SKUs
+carry the business, what might run out, and which transactions deserve a second
+look.
 
-<!-- Replace with a real screenshot once captured -->
-<p align="center">
-  <img src="docs/screenshots/01-overview.png" alt="Overview page" width="800"/>
-</p>
-
----
-
-## Why this project exists
-
-Most "retail dashboard" portfolio projects are either:
-
-1. **Static charts on top of a Kaggle notebook** — no real product surface.
-2. **AI-buzzword wrappers** — "AI-powered insights" with no model accountability.
-
-MarginBoard takes the opposite stance: every metric is reproducible from raw
-data, every model has a validation window, every assumption is documented,
-and the UI is restrained on purpose. The point is to show what a sober,
-production-minded analytics product looks like — not to demo flashy AI.
+The goal was not to build another "AI-powered" dashboard. Every number is
+reproducible from the raw data, every model reports a validation window, and
+every assumption that can't be backed by the data (simulated stock, anomaly
+thresholds) is labelled as such in the UI.
 
 ---
 
-## What's inside
+## Pages
 
-| Capability | What it does | What it does NOT do |
+| Page | What it answers | Method |
 |---|---|---|
-| Revenue Overview | Total revenue, AOV, units, returns, active customers, with growth vs the previous period of equal length. | Real-time data. The dataset is historical (Dec 2009 – Dec 2011). |
-| 30-day Forecast | GradientBoostingRegressor on lag + calendar features. Reports MAE and MAPE on a chronological 20% validation split. | External regressors (holidays, promotions, macro events). |
-| Inventory Risk | Estimated demand, deterministic simulated stock per SKU, safety stock, recommended reorder, potential lost revenue, risk level. | Real inventory. Stock is simulated and clearly labeled. |
-| Transaction Anomaly Monitoring | Hybrid: rule-based reason codes + IsolationForest score → Low / Medium / High risk. | Fraud confirmation. The dataset has no fraud labels; this is a review aid. |
+| Overview | Revenue, orders, AOV, units, returns, active customers; growth vs the previous period of equal length. | Aggregation over the cleaned transaction frame. |
+| Forecasting | Where is revenue heading over the next 30 days? | GradientBoostingRegressor on lag + calendar features, validated with 5-fold TimeSeriesSplit. |
+| Customers | Who are the most valuable customers, and do they come back? | RFM segmentation + monthly cohort retention. |
+| Cross-Sell | What products sell together? | Market basket analysis (FP-Growth), ranked by lift. |
+| Products | Which SKUs drive revenue? | ABC classification + Pareto curve. |
+| Inventory Risk | Which SKUs might run out? | Demand estimate vs. *simulated* stock cover. |
+| Transactions | Which transactions look unusual? | Hybrid rule codes + IsolationForest anomaly score. |
+
+The UI ships in **English and Bahasa Indonesia**, **light and dark**, with the
+preference persisted client-side. No chatbot, no LLM-generated "insights" —
+the one rule-based note on the Overview page is computed from the period
+comparison, not generated.
 
 ---
 
 ## Tech stack
 
-**Backend** · Python 3.13 · FastAPI · Pandas · NumPy · scikit-learn · PyArrow
+**Backend** — Python 3.13 · FastAPI · Pandas · NumPy · scikit-learn · mlxtend · PyArrow
+**Frontend** — Next.js 14 (App Router) · TypeScript · Tailwind CSS · Recharts
+**Tooling** — pytest + coverage · ruff · mypy · pre-commit · GitHub Actions · Docker
 
-**Frontend** · Next.js 14 (App Router) · TypeScript · Tailwind CSS · Recharts
-
-**Data** · Parquet cache built on first run from raw CSV; deterministic and reproducible.
-
-**UI** · Light + dark mode (CSS variables, no `dark:` class spam). Bilingual interface (English + Bahasa Indonesia) via lightweight in-house i18n — no external library. User preference is persisted in `localStorage`.
-
-> Note on currency: values are displayed in **USD notation** for portfolio
-> readability. The source dataset is in GBP from a UK retailer; no FX
-> conversion is applied. Treat figures as approximate USD-equivalent for
-> display purposes only. This is documented in `docs/MODEL_CARD.md`.
+Cleaned data is cached as Parquet and trained models are persisted as joblib
+artifacts, so only the first start pays the build cost — restarts load from disk.
 
 ---
 
-## Methodology highlights
+## Methodology, in brief
 
-> Full details in [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md).
+Full write-up in [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md). The short version:
 
-### Revenue
-`revenue = quantity × unit_price`. Negative quantities are preserved as
-return/cancellation impact, not silently dropped. The growth column on every
-KPI compares against an immediately preceding period of equal length.
+**Revenue** — `revenue = quantity × unit_price`. Negative quantities are kept as
+return/cancellation impact, not silently dropped. Growth compares the selected
+period against an immediately preceding window of the same length.
 
-### Forecasting
-- **Aggregation** — Daily revenue, reindexed to a continuous date range
-  (missing days filled as zero so lag features stay well-defined).
-- **Features** — Day of week, month, week of year, weekend flag, lag 1 day,
-  lag 7 day, rolling 7 / 14 / 30 day means.
-- **Model** — `GradientBoostingRegressor(n_estimators=300, learning_rate=0.05, max_depth=3, random_state=42)`.
-- **Validation** — Chronological 80/20 split. Metrics reported are MAE and
-  MAPE on the held-out tail.
-- **Inference** — Iterative one-step-ahead for 30 days. Each prediction
-  feeds the lag features of the next step.
+**Forecasting** — Daily revenue, reindexed to a continuous range (missing days
+zero-filled so lag features stay well-defined). Features: day of week, month,
+week of year, weekend flag, lag-1, lag-7, rolling 7/14/30-day means. Validated
+with **5-fold TimeSeriesSplit** — MAPE is reported as mean ± std across folds
+because a single split hides how unstable this series actually is (per-fold MAPE
+ranges from ~32% to ~84% on this data). The 30-day forecast is generated
+iteratively. No external regressors.
 
-### Inventory (simulated)
-- `estimated_demand = mean(daily units, last 90 days) × 30`
-- `safety_stock = std(daily units) × 1.65` (≈ 95% service level)
-- `simulated_stock = estimated_demand × coverage_ratio`, where
-  `coverage_ratio ∈ [0.3, 2.0]` is derived deterministically from
-  `sha256(stock_code)` so the same SKU always gets the same simulated stock.
-- `recommended_reorder = max(0, demand + safety_stock − stock)`
-- `risk_level` follows the gap rule (Low ≤ 0, Medium ≤ 30% of demand, High otherwise).
+**Customers** — RFM scoring into segments (Champions, Loyal, At Risk, …) plus a
+cohort-retention matrix by first-purchase month.
 
-### Anomaly monitoring
-Hybrid by design:
+**Cross-Sell** — FP-Growth over invoice baskets, pruned to the top 200 SKUs and
+`min_support = 0.01`, surfacing rules by lift. Co-occurrence, not causation —
+stated in the UI.
 
-- **Rules** generate explainable reason codes (extreme quantity, extreme
-  unit price, unusually high transaction value, negative quantity,
-  cancellation pattern). Thresholds use the 99th percentile of the dataset.
-- **IsolationForest** (`contamination=0.02`, 200 trees, trained on a 50K
-  random subsample) provides a continuous score.
-- The two are combined into a normalized `anomaly_score ∈ [0, 1]`. Risk
-  level uses `≥ 0.85` → High, `≥ 0.60` → Medium.
+**Inventory (simulated)** — The dataset has no stock levels, so stock is
+simulated deterministically: `coverage_ratio ∈ [0.3, 2.0]` derived from
+`sha256(stock_code)`, so the same SKU always gets the same value. Demand,
+safety stock (`std × 1.65`), reorder, and lost-revenue follow from there. Every
+stock figure is labelled simulated.
 
-This is **transaction anomaly monitoring**, not fraud detection. There are
-no confirmed fraud labels in the source dataset, so the output is a review
-aid only.
+**Transactions** — Hybrid scoring: transparent rule codes (extreme quantity,
+extreme unit price, unusually high value, negative quantity, cancellation
+pattern) at the 99th percentile, combined with an IsolationForest score into a
+normalized 0–1 anomaly score. This is anomaly *monitoring*, not fraud
+detection — the dataset has no fraud labels.
 
 ---
 
-## Limitations (read before forming conclusions)
+## Limitations
 
-- **No real-time data.** Dataset is historical (Dec 2009 – Dec 2011).
-- **No real stock levels.** Inventory is simulated; coverage ratios are
-  deterministic per SKU but not empirically validated against ground truth.
-- **No fraud labels.** Anomaly thresholds are heuristic; precision / recall
-  cannot be measured without labeled data.
-- **Single time series for forecasting.** Product-level forecasts would
-  need per-SKU models or hierarchical reconciliation — out of v1 scope.
-- **No external regressors.** Holidays, promotions, and macro events are
-  not in the model. Real-world accuracy will likely be worse than the
-  reported validation MAPE.
-- **First-request latency.** Heavy services (forecast, inventory, anomaly)
-  build artifacts on first request and cache in memory. A pre-trained
-  artifact pipeline is planned (see [ROADMAP](docs/ROADMAP.md)).
+- The data is historical (Dec 2009 – Dec 2011); nothing here is real-time.
+- Stock is simulated and not validated against ground truth.
+- No fraud labels, so anomaly precision/recall can't be measured.
+- Forecasting is a single business-level series; product-level forecasting is
+  out of scope. Real-world accuracy will be worse than the validation MAPE.
+- Currency is shown in USD notation for readability; the source is GBP and no FX
+  conversion is applied.
 
 ---
 
 ## Run locally
 
-### Prerequisites
-- Python **3.11–3.13** (3.14 has no prebuilt wheels for pandas / sklearn yet)
-- Node.js 18+
-- The Online Retail II CSV at `backend/data/raw/online_retail_II.csv`
-  ([download from UCI](https://archive.ics.uci.edu/dataset/502/online+retail+ii))
+**Prerequisites** — Python 3.11–3.13, Node 18+, and the Online Retail II CSV at
+`backend/data/raw/online_retail_II.csv`
+([download from UCI](https://archive.ics.uci.edu/dataset/502/online+retail+ii)).
 
 ### Backend
+
 ```powershell
 cd backend
 py -3.13 -m venv .venv
@@ -143,9 +117,12 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-API docs: <http://localhost:8000/docs>
+First start builds the Parquet cache and trains + persists the model artifacts
+(forecast, inventory, anomaly). Subsequent starts load them from disk. API docs
+at <http://localhost:8000/docs>.
 
 ### Frontend
+
 ```powershell
 cd frontend
 Copy-Item .env.example .env.local
@@ -153,118 +130,67 @@ npm install
 npm run dev
 ```
 
-App: <http://localhost:3000>
+App at <http://localhost:3000>.
 
-### Pre-train artifacts (recommended)
-The forecast model, anomaly scorer, and inventory table are precomputed once
-and cached so the first HTTP request is fast.
+### With Docker
 
-```powershell
-cd backend
-python -m ml.train_all
-```
-
-This writes joblib bundles to `backend/data/processed/artifacts/`. The
-service falls back to on-demand training if any artifact is missing, so
-this step is optional for first-time runs.
-
-### Quick start with sample data
-The full CSV is ~94 MB. For a fast first run, generate a sample:
-
-```powershell
-cd backend
-python scripts/build_sample.py
-```
-
-This writes a 5 000-row stratified subsample to `backend/data/sample/`.
-
-### Run with Docker
-
-```powershell
+```bash
 docker compose up --build
 ```
 
-Brings up both backend (`:8000`) and frontend (`:3000`). The backend
-container mounts `backend/data/raw` and `backend/data/processed` so
-artifacts persist between restarts.
+---
 
-### Tests + lint
+## Development
 
-```powershell
-cd backend
-pip install -r requirements-dev.txt
-pytest         # 50+ unit tests, ~6s
-ruff check .
-mypy app/ ml/  # informational
+```bash
+make test     # pytest (backend, ~86% coverage)
+make lint     # ruff
+make train    # rebuild + persist model artifacts
 ```
+
+CI runs lint, type check, tests, and the production frontend build on every
+push (`.github/workflows/`).
 
 ---
 
 ## Repository layout
 
 ```
-marginboard-retail-ops/
+MarginBoard/
 ├── README.md
 ├── LICENSE
-├── PRD.md                      # Original product requirements
+├── Makefile
+├── docker-compose.yml
 ├── docs/
-│   ├── ROADMAP.md              # What's planned next
-│   ├── MODEL_CARD.md           # Forecast + anomaly model details
-│   └── screenshots/            # README + page-by-page captures
+│   ├── MODEL_CARD.md        # forecast / anomaly / basket model details
+│   ├── ROADMAP.md
+│   └── adr/                 # architecture decision records
 ├── notebooks/
 │   └── 01_data_exploration.ipynb
 ├── backend/
 │   ├── app/
-│   │   ├── routes/             # FastAPI routers per module
-│   │   ├── services/           # Business logic + ML
-│   │   ├── schemas/            # Pydantic response models
-│   │   └── utils/
-│   ├── data/
-│   │   ├── raw/                # Source CSV (gitignored)
-│   │   ├── processed/          # Parquet cache (gitignored)
-│   │   └── sample/             # Tiny CSV for demos
-│   ├── scripts/
+│   │   ├── routes/          # FastAPI routers per module
+│   │   ├── services/        # business logic + ML
+│   │   ├── schemas/         # Pydantic response models
+│   │   ├── utils/
+│   │   ├── main.py          # app + startup artifact prewarm
+│   │   ├── config.py        # env-driven settings
+│   │   └── logging_config.py
+│   ├── ml/                  # offline training scripts + artifact paths
+│   ├── tests/               # pytest suite
+│   ├── data/{raw,processed,sample}/
+│   ├── Dockerfile
 │   └── requirements.txt
 └── frontend/
-    ├── app/                    # Next.js App Router pages
-    ├── components/
-    │   ├── layout/             # AppShell, Sidebar, Topbar, PageHeader
-    │   ├── cards/              # MetricCard
-    │   ├── charts/             # TrendChart, ForecastChart (Recharts)
-    │   ├── tables/             # DataTable
-    │   ├── filters/            # FilterBar
-    │   ├── states/             # Loading / Empty / Error
-    │   └── badges/             # RiskBadge
-    ├── lib/                    # api client, formatters, cn()
-    └── types/                  # Mirrors of backend Pydantic shapes
-```
-
----
-
-## Documentation
-
-| Doc | Purpose |
-|-----|---------|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | What's planned next, prioritized |
-| [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | Forecast + anomaly model details, limitations, failure modes |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records — *why* the obvious-looking choices were made |
-| [`CHANGELOG.md`](CHANGELOG.md) | Versioned history |
-
-## Common dev commands
-
-A `Makefile` is included for the common operations:
-
-```bash
-make install-dev   # backend deps
-make test          # pytest
-make lint          # ruff
-make train         # rebuild model artifacts
-make serve         # uvicorn dev server
-make docker-up     # docker compose up --build
+    ├── app/                 # one route per page
+    ├── components/          # layout, primitives, charts, tables
+    ├── lib/                 # api client, i18n, theme, formatters
+    ├── types/
+    └── Dockerfile
 ```
 
 ---
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE)

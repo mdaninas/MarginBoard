@@ -35,21 +35,21 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   return (
-    <aside className="hidden md:sticky md:top-0 md:flex md:h-screen md:w-60 md:shrink-0 md:flex-col md:gap-5 md:overflow-y-auto md:border-r md:border-rule md:px-4 md:py-5">
-      {/* Logo + wordmark */}
-      <Link href="/overview" className="flex items-center gap-2.5 px-1">
-        <Logo size={30} />
-        <div className="leading-none">
-          <div className="text-[14.5px] font-semibold tracking-tight">MarginBoard</div>
-          <div className="mt-1 text-[10px] text-ink-faint">retail ops</div>
-        </div>
-      </Link>
+    <aside className="hidden md:sticky md:top-0 md:flex md:h-screen md:w-56 md:shrink-0 md:flex-col md:border-r md:border-rule md:px-3 md:py-4">
+      {/* Header: brand + controls. Theme toggle and language live up here so
+          they read as app chrome, not stranded at the bottom. */}
+      <div className="mb-4 flex items-center justify-between gap-2 px-1">
+        <Link href="/overview" className="flex items-center gap-2">
+          <Logo size={26} />
+          <span className="text-[15px] font-semibold tracking-tight">MarginBoard</span>
+        </Link>
+        <ThemeToggle />
+      </div>
+
+      <LanguageSwitcher className="mb-4 w-full" />
 
       {/* Nav */}
-      <nav className="flex flex-col gap-0.5">
-        <div className="mb-1.5 px-2 text-[10px] font-medium uppercase tracking-wider text-ink-faint">
-          Workspace
-        </div>
+      <nav className="flex flex-col gap-1">
         {NAV.map(({ href, key, Icon }) => {
           const active = pathname === href || (pathname?.startsWith(href + "/") ?? false);
           return (
@@ -57,7 +57,7 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-2.5 rounded-mb-1 px-2.5 py-2 text-[12.5px] transition-colors",
+                "flex items-center gap-3 rounded-mb-1 px-2.5 py-2.5 text-[13px] transition-colors",
                 active
                   ? "border border-rule bg-surface font-medium text-ink shadow-card"
                   : "border border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink",
@@ -69,22 +69,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      <div className="flex-1" />
-
-      {/* Dataset card — honest about the source; the dataset is historical,
-          not a live feed, so no "synced" / real-time language. */}
-      <div className="rounded-mb-2 border border-rule bg-surface-2 p-3">
-        <div className="text-[11px] font-semibold">Online Retail II</div>
-        <div className="mt-0.5 text-[10.5px] text-ink-faint">
-          UCI · Dec 2009 – Dec 2011
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <ThemeToggle />
-        <LanguageSwitcher />
-      </div>
     </aside>
   );
 }

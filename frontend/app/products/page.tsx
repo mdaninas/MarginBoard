@@ -1,20 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionH } from "@/components/layout/SectionH";
 import { MetricCard } from "@/components/cards/MetricCard";
 import { DataTable, type Column } from "@/components/tables/DataTable";
+import { ParetoChartLazy } from "@/components/charts/lazy";
 import { LoadingState } from "@/components/states/LoadingState";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -23,7 +14,6 @@ import { Tag } from "@/components/primitives/Tag";
 import { apiGet } from "@/lib/api";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n/I18nProvider";
-import { useThemeColors } from "@/lib/theme/ThemeProvider";
 import type { ABCClass, ABCClassificationRow, ABCSummary } from "@/types/api";
 
 const PARETO_LIMIT = 500;
@@ -36,7 +26,6 @@ interface PageData {
 
 export default function ProductsPage() {
   const { t } = useTranslation();
-  const colors = useThemeColors();
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,7 +137,7 @@ export default function ProductsPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow={t("products.title")}
-        title="Which SKUs drive revenue?"
+        title={t("products.headline")}
         description={t("products.description")}
       />
 
@@ -167,30 +156,23 @@ export default function ProductsPage() {
           >
             <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-[1fr_2fr]">
               <div>
-                <p className="text-[11px] font-medium text-ink-faint">Concentration</p>
+                <p className="text-[11px] font-medium text-ink-faint">{t("products.concentration")}</p>
                 <p className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.8px]">
-                  Top {data.summary.a_count.toLocaleString()} SKUs ={" "}
+                  {t("products.conc_prefix", { n: data.summary.a_count.toLocaleString() })}{" "}
                   <span className="text-accent-ink">
                     {data.summary.a_revenue_share_pct.toFixed(1)}%
                   </span>{" "}
-                  of revenue
+                  {t("products.conc_suffix")}
                 </p>
                 <p className="mt-1 text-[12.5px] text-ink-muted">
-                  Long-tail share is just {data.summary.c_revenue_share_pct.toFixed(1)}% spread across {data.summary.c_count.toLocaleString()} C-class SKUs.
+                  {t("products.long_tail", {
+                    pct: data.summary.c_revenue_share_pct.toFixed(1),
+                    n: data.summary.c_count.toLocaleString(),
+                  })}
                 </p>
               </div>
               {paretoChart.length > 0 && (
-                <div className="h-24">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={paretoChart} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-                      <XAxis dataKey="rank" hide />
-                      <YAxis tick={{ fontSize: 10, fill: colors.inkFaint }} tickFormatter={(v) => `${v}%`} domain={[0, 100]} width={32} stroke={colors.border} />
-                      <ReferenceLine y={80} stroke={colors.accentInk} strokeDasharray="3 3" />
-                      <Line type="monotone" dataKey="cumulative" stroke={colors.accent} strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <ParetoChartLazy data={paretoChart} variant="mini" />
               )}
             </div>
           </div>
@@ -200,17 +182,17 @@ export default function ProductsPage() {
             <MetricCard
               label={t("products.kpi.a_class")}
               value={formatNumber(data.summary.a_count)}
-              hint={`${data.summary.a_revenue_share_pct.toFixed(1)}% revenue`}
+              hint={t("common.pct_revenue", { pct: data.summary.a_revenue_share_pct.toFixed(1) })}
             />
             <MetricCard
               label={t("products.kpi.b_class")}
               value={formatNumber(data.summary.b_count)}
-              hint={`${data.summary.b_revenue_share_pct.toFixed(1)}% revenue`}
+              hint={t("common.pct_revenue", { pct: data.summary.b_revenue_share_pct.toFixed(1) })}
             />
             <MetricCard
               label={t("products.kpi.c_class")}
               value={formatNumber(data.summary.c_count)}
-              hint={`${data.summary.c_revenue_share_pct.toFixed(1)}% revenue`}
+              hint={t("common.pct_revenue", { pct: data.summary.c_revenue_share_pct.toFixed(1) })}
             />
           </div>
 
@@ -218,50 +200,9 @@ export default function ProductsPage() {
             <div className="card p-[18px]">
               <SectionH
                 title={t("products.section.pareto")}
-                hint={`Top ${PARETO_LIMIT} SKUs · ranked by revenue`}
+                hint={t("products.pareto_hint", { n: PARETO_LIMIT })}
               />
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={paretoChart} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-                    <XAxis
-                      dataKey="rank"
-                      tick={{ fontSize: 11, fill: colors.inkFaint }}
-                      stroke={colors.border}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: colors.inkFaint }}
-                      tickFormatter={(v) => `${v}%`}
-                      domain={[0, 100]}
-                      stroke={colors.border}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: 12,
-                        border: `1px solid ${colors.border}`,
-                        backgroundColor: colors.surface,
-                        color: colors.ink,
-                        fontSize: 12,
-                      }}
-                      formatter={(v: number) => [`${v.toFixed(2)}%`, "Cumulative"]}
-                      labelFormatter={(v) => `Rank ${v}`}
-                    />
-                    <ReferenceLine
-                      y={80}
-                      stroke={colors.inkFaint}
-                      strokeDasharray="3 3"
-                      label={{ value: "80%", position: "right", fill: colors.inkFaint, fontSize: 10 }}
-                    />
-                    <ReferenceLine
-                      y={95}
-                      stroke={colors.inkFaint}
-                      strokeDasharray="3 3"
-                      label={{ value: "95%", position: "right", fill: colors.inkFaint, fontSize: 10 }}
-                    />
-                    <Line type="monotone" dataKey="cumulative" stroke={colors.accent} strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ParetoChartLazy data={paretoChart} variant="full" />
             </div>
           )}
 
@@ -281,7 +222,7 @@ export default function ProductsPage() {
               <div className="flex items-center justify-between border-b border-rule px-[18px] py-3">
                 <SectionH
                   title={t("products.section.table")}
-                  hint={`${totalSkus.toLocaleString()} SKUs total`}
+                  hint={t("products.skus_total", { n: totalSkus.toLocaleString() })}
                   className="mb-0"
                 />
               </div>

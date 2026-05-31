@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Light theme — warm cream + coral. */
+    /* Light theme:warm cream + coral. */
     --color-background: #f5f0e8;
     --color-surface: #ffffff;
     --color-surface-2: #fbf6ec;
@@ -27,7 +27,7 @@
   }
 
   .dark {
-    /* Dark theme — warm browns, retain coral identity. */
+    /* Dark theme:warm browns, retain coral identity. */
     --color-background: #1a1612;
     --color-surface: #221d18;
     --color-surface-2: #2a2520;
@@ -74,7 +74,7 @@
     @apply bg-surface-2 border border-rule rounded-mb-3 shadow-card;
   }
 
-  /* Used for code-y identifiers — invoice ids, stock codes. */
+  /* Used for code-y identifiers:invoice ids, stock codes. */
   .mono {
     font-family: theme('fontFamily.mono');
   }

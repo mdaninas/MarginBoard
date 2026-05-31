@@ -19,7 +19,7 @@ from app.schemas.analytics import (
     CustomerSegment,
     SegmentSummary,
 )
-from app.services.data_service import load_transactions
+from app.services.data_service import load_transactions, product_skus_only
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ def get_abc_classification(limit: int = 100) -> list[ABCClassificationRow]:
     if _abc_cache is None:
         with _abc_lock:
             if _abc_cache is None:
-                _abc_cache = _build_abc(load_transactions())
+                _abc_cache = _build_abc(product_skus_only(load_transactions()))
     return _abc_cache[0][:limit]
 
 
@@ -169,7 +169,7 @@ def get_abc_summary() -> ABCSummary:
     if _abc_cache is None:
         with _abc_lock:
             if _abc_cache is None:
-                _abc_cache = _build_abc(load_transactions())
+                _abc_cache = _build_abc(product_skus_only(load_transactions()))
     return _abc_cache[1]
 
 

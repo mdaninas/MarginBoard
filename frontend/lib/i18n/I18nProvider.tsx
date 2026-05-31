@@ -16,6 +16,7 @@ import {
   REASON_CODE_KEYS,
   type Locale,
 } from "./dictionaries";
+import { setFormatLocale } from "@/lib/format";
 
 interface I18nContextValue {
   locale: Locale;
@@ -48,11 +49,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
   useEffect(() => {
-    setLocaleState(readInitialLocale());
+    const initial = readInitialLocale();
+    setLocaleState(initial);
+    setFormatLocale(initial);
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
+    setFormatLocale(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
       document.documentElement.lang = next;
