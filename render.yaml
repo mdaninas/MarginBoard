@@ -1,0 +1,32 @@
+# Render Blueprint — backend only.
+# Render auto-deploys on every push to the connected branch (this is the CI/CD).
+# The frontend lives on Vercel; see docs/DEPLOY.md.
+#
+# To use: push this file, then on Render → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: marginboard-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Serve the committed sample dataset (the full 94 MB CSV is not in git).
+      - key: RAW_DATA_DIR
+        value: /app/data/sample
+      # JSON logs read better in Render's log viewer.
+      - key: LOG_FORMAT
+        value: json
+      # Train artifacts at startup. The sample is tiny, so this is fast.
+      - key: PREWARM_ON_STARTUP
+        value: "true"
+      # Set after the Vercel deploy exists — must match the frontend origin
+      # exactly (no trailing slash). Comma-separate multiple origins.
+      - key: CORS_ORIGINS
+        sync: false
+      # Optional: set a value to enable POST /api/admin/refresh. Leave unset
+      # to keep admin endpoints disabled.
+      - key: ADMIN_TOKEN
+        sync: false

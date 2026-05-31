@@ -138,6 +138,11 @@ App at <http://localhost:3000>.
 docker compose up --build
 ```
 
+### Deploy
+
+Frontend on Vercel, backend on Render — both auto-deploy on push. Step-by-step
+in [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ---
 
 ## Development
