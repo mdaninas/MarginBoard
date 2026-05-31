@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -29,8 +29,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000",
         description="Allowed origins for CORS. Comma-separated in env.",
     )
     raw_data_dir: Path = Field(default=DEFAULT_RAW_DIR)
@@ -45,21 +45,18 @@ class Settings(BaseSettings):
         description="If True, load cached artifacts during startup so the first request is fast.",
     )
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def _split_csv(cls, v: object) -> list[str]:
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v  # type: ignore[return-value]
-
 
 settings = Settings()
+
+
+def _split_csv(value: str) -> tuple[str, ...]:
+    return tuple(origin.strip() for origin in value.split(",") if origin.strip())
 
 
 # ---- Backward-compatible module constants -----------------------------------
 
 RAW_DIR: Path = settings.raw_data_dir
-CORS_ORIGINS: tuple[str, ...] = tuple(settings.cors_origins)
+CORS_ORIGINS: tuple[str, ...] = _split_csv(settings.cors_origins)
 API_PREFIX = "/api"
 
 RAW_DATASET_CANDIDATES = (
